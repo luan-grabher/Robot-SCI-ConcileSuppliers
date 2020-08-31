@@ -1,7 +1,7 @@
 package Testes;
 
 import Auxiliar.Valor;
-import conciliarunico.ConciliarUnico;
+import robot_conciliate.ConciliarUnico;
 import java.util.Calendar;
 
 public class teste {
@@ -18,7 +18,7 @@ public class teste {
         boolean zerarConciliacao = false;
         String tipoContaContabil = "conta ctb";
 
-        ConciliarUnico.setNomeRobo("Testes");
+        
         System.out.println(
                 ConciliarUnico.principal(
                         codEmpresa, contaCTB, tipoContaContabil, dataInicial, dataFinal, zerarConciliacao

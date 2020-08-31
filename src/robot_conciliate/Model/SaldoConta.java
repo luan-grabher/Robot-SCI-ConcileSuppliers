@@ -1,7 +1,7 @@
-package conciliarunico.Model;
+package robot_conciliate.Model;
 
 import Auxiliar.Valor;
-import conciliarunico.Control.ExecucaoControl;
+import robot_conciliate.Control.Controller;
 import java.time.Duration;
 import java.util.Calendar;
 import java.util.List;
@@ -12,7 +12,7 @@ import sql.Banco;
 public class SaldoConta {
 
     private static final ComandosSqlUnico comandos = new ComandosSqlUnico();
-    private static final String pathBancoSql = ExecucaoControl.pathBancoSql;
+    private static final String pathBancoSql = Controller.pathBancoSql;
     private static final Banco banco = new Banco(pathBancoSql);
     private static List<String[]> rs;
 

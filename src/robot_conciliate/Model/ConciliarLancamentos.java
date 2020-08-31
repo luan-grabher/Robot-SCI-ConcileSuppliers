@@ -1,8 +1,8 @@
-package conciliarunico.Model;
+package robot_conciliate.Model;
 
 import Auxiliar.Valor;
 import Executor.View.Carregamento;
-import conciliarunico.Control.ExecucaoControl;
+import robot_conciliate.Control.Controller;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -74,7 +74,7 @@ public class ConciliarLancamentos {
         resultado.append("Débito Conciliados: ").append(creditoConciliados).append("<br>");
         resultado.append("Crédito Conciliados: ").append(debitoConciliados).append("<br>");
 
-        ExecucaoControl.setResultado(resultado.toString());
+        Controller.setResultado(resultado.toString());
         System.out.println(resultado.toString().replaceAll("<br>", "\n"));
     }
 

@@ -1,16 +1,17 @@
-package conciliarunico.Control;
+package robot_conciliate.Control;
 
 import Auxiliar.Valor;
 import Entity.Executavel;
-import conciliarunico.Model.AlterarLancamentos;
-import conciliarunico.Model.ConciliarLancamentos;
+import SimpleDotEnv.Env;
+import robot_conciliate.Model.AlterarLancamentos;
+import robot_conciliate.Model.ConciliarLancamentos;
 import java.util.Calendar;
 import lctocontabil.Entity.ComandosSql;
 import lctocontabil.Model.LctoContabil_Model;
 
-public class ExecucaoControl {
+public class Controller {
 
-    public static final String pathBancoSql = "\\\\zac\\robos\\Tarefas\\Arquivos\\sci.cfg";
+    public static final String pathBancoSql = Env.get("databaseCfgFilePath");
     private final LctoContabil_Model modeloLctos;
 
     private final Integer codigoEmpresa;
@@ -21,7 +22,7 @@ public class ExecucaoControl {
     
     private static String resultado = "Execução finalizada, verifique a conciliação dentro do único.";
 
-    public ExecucaoControl(ComandosSql comandosSqlLctos, Integer codEmpresa, Integer contaCTB, String tipoContaContabil, Calendar dataInicial, Calendar dataFinal) {
+    public Controller(ComandosSql comandosSqlLctos, Integer codEmpresa, Integer contaCTB, String tipoContaContabil, Calendar dataInicial, Calendar dataFinal) {
         this.codigoEmpresa = codEmpresa;
         this.contaCtb = contaCTB;
         this.dataInicial = new Valor(dataInicial).getNumberFromDateDMY();
@@ -100,7 +101,7 @@ public class ExecucaoControl {
     }
 
     public static void setResultado(String resultado) {
-        ExecucaoControl.resultado = resultado;
+        Controller.resultado = resultado;
     }
     
     
