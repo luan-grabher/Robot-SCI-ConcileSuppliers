@@ -1,13 +1,20 @@
 package robot_conciliate.Control;
 
 import Auxiliar.Valor;
+import Dates.Dates;
 import Entity.Executavel;
 import SimpleDotEnv.Env;
+import fileManager.FileManager;
 import robot_conciliate.Model.AlterarLancamentos;
 import robot_conciliate.Model.ConciliarLancamentos;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 import lctocontabil.Entity.ComandosSql;
+import lctocontabil.Entity.ContabilityEntry;
+import lctocontabil.Model.ContabilityEntries_Model;
 import lctocontabil.Model.LctoContabil_Model;
+import sql.Database;
 
 public class Controller {
 
@@ -104,5 +111,50 @@ public class Controller {
         Controller.resultado = resultado;
     }
     
+    
+    //---------------------------------------------------------------------------------------------------------------------
+    
+    private final Integer enterprise;
+    private final Integer account;
+    private final Integer participant;
+    private final Calendar startDate;
+    private final Calendar endDate;
+    private final String databaseCfgFilePath = Env.get("databaseCfgFilePath");
+    
+    private final Map<Integer,ContabilityEntry> entries = new HashMap<>();
+
+    public Controller(Integer enterprise, Integer account, Integer participant, Calendar startDate, Calendar finalDate) {
+        this.enterprise = enterprise;
+        this.account = account;
+        this.participant = participant;
+        this.startDate = startDate;
+        this.endDate = finalDate;
+    }
+    
+    public void setDatabase(){
+        Database.setStaticObject(new Database(FileManager.getFile(databaseCfgFilePath)));
+        
+        if(!Database.getDatabase().testConnection()){
+            throw new Error("Erro ao conectar ao banco de dados!");
+        }        
+    }
+    
+    public Map<Integer,ContabilityEntry> getDatabaseEntries(){
+        entries.clear();
+                
+        String sql = FileManager.getText(FileManager.getFile("sql\\selectContabilityEntries.sql"));
+        
+        Map<String, String> swaps = new HashMap<>();
+        swaps.put("enterprise", enterprise.toString());
+        swaps.put("account", account.toString());
+        swaps.put("participant", participant == null ? "NULL" : participant.toString());        
+        swaps.put("dateStart", Dates.getCalendarInThisStringFormat(startDate, "YYYY-MM-dd"));
+        swaps.put("dateEnd", Dates.getCalendarInThisStringFormat(endDate, "YYYY-MM-dd"));
+        
+        
+        entries.putAll(ContabilityEntries_Model.getEntries(sql, swaps));
+        
+        return entries;
+    }
     
 }
