@@ -5,7 +5,7 @@ import Dates.Dates;
 import Entity.Executavel;
 import SimpleDotEnv.Env;
 import fileManager.FileManager;
-import robot_conciliate.Model.AlterarLancamentos;
+import robot_conciliate.Model.ChangeEntries;
 import robot_conciliate.Model.ConciliarLancamentos;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -53,7 +53,7 @@ public class Controller {
 
         @Override
         public void run() {
-            AlterarLancamentos.definirNroDocto(modeloLctos.getLctos());
+            ChangeEntries.setDocument(modeloLctos.getLctos());
         }
     }
 
@@ -157,4 +157,9 @@ public class Controller {
         return entries;
     }
     
+    public Map<Integer, ContabilityEntry> setEntriesDocuments(){
+        ChangeEntries.setDocument(entries);
+        
+        return entries;
+    }
 }
