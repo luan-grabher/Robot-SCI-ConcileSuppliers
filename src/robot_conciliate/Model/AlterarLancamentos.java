@@ -9,10 +9,7 @@ import lctocontabil.Model.LctoContabil_Model;
 
 public class AlterarLancamentos {
 
-    public static void zerarConciliacao(LctoContabil_Model modelo) {
-        
-    }
-
+    
     public static void definirNroDocto(List<LctoContabil> lctos) {
         Carregamento barra = new Carregamento("Definindo número doc", 0, lctos.size());
 
