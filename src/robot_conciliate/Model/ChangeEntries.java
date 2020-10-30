@@ -1,14 +1,20 @@
 package robot_conciliate.Model;
 
-import Auxiliar.Valor;
 import SimpleView.Loading;
 import java.util.Calendar;
-import java.util.List;
 import java.util.Map;
 import lctocontabil.Entity.ContabilityEntry;
 
 public class ChangeEntries {
 
+    /**
+     * Percorre todos os lançamentos passados e coloca o primeiro número do
+     * complemento como documento caso o lançamento não tenha documento.
+     *
+     * @param entries lançamentos a ganhar documento
+     * @return O próprio mapa passado de volta modificado. A referencia já é
+     * modificada, não é necessário implementar.
+     */
     public static Map<Integer, ContabilityEntry> setDocument(Map<Integer, ContabilityEntry> entries) {
         //Inicia barra
         Integer size = entries.size();
@@ -40,13 +46,43 @@ public class ChangeEntries {
                         )
                 );
 
-                
+                //Define o documento como o primeiro número que encontrar no complemento
+                contabilityEntry.setDocument(getFirstNumber(contabilityEntry.getComplement()));
             }
         }
+
+        loading.dispose();
 
         return entries;
     }
 
+    /**
+     * Pega o primeiro número que aparecer em uma string.
+     *
+     * @param str String que contém números
+     * @return Se encontrar um número retorna o número, se não retorna uma
+     * string em branco.
+     */
+    public static String getFirstNumber(String str) {
+        String[] numbers = str.split("[^0-9]+");
+        for (String number : numbers) {
+            if (!number.equals("")) {
+                return number;
+            }
+        }
+
+        return "";
+    }
+
+    /**
+     * Remove do complemento os anos sequidos de varios zeros REmove caracteres
+     * diferentes de letras, numeros, "." e "-"
+     *
+     * @param str String que será modificada.
+     * @param year Ano de referencia
+     * @return A própria String modificada, não precisa implementar ela pois a
+     * referência recebida da variavel já é modificada
+     */
     public static String fixComplement(String str, Integer year) {
         str = str.replaceAll(year + "000", "");
         str = str.replaceAll(year + "/", "");
@@ -55,42 +91,5 @@ public class ChangeEntries {
         str = str.replaceAll("[^a-zA-Z0-9 .-]", "");
 
         return str;
-    }
-
-    public static void setDocumento(List<LctoContabil> lctos) {
-        Carregamento barra = new Carregamento("Definindo número doc", 0, lctos.size());
-
-        for (int i = 0; i < lctos.size(); i++) {
-            barra.atualizar(i);
-            LctoContabil lcto = lctos.get(i);
-
-            if (lcto.getDocumento().getLong() == (long) 0) {
-                Integer ano = lcto.getData().getCalendar("ymd").get(Calendar.YEAR);
-                lcto.setComplemento(arrumarComplemento(lcto.getComplemento(), ano));
-                lcto.setComplemento(arrumarComplemento(lcto.getComplemento(), ano - 1));
-
-                List<String> numerosComplemento = lcto.getComplemento().getNumbersList("/");
-                if (numerosComplemento.size() > 0) {
-                    Valor novoDoc = new Valor(numerosComplemento.get(0).replaceAll("[^0-9]", ""));
-                    String nroDocString = novoDoc.getLong().toString();
-                    Integer numeroComeca = nroDocString.length() - 14;
-                    nroDocString = nroDocString.substring(numeroComeca < 0 ? 0 : numeroComeca, nroDocString.length());
-
-                    lcto.setDocumento(new Valor(nroDocString));
-                }
-            }
-        }
-
-        barra.dispose();
-    }
-
-    private static Valor arrumarComplemento(Valor valor, Integer ano) {
-        valor = new Valor(valor.getString().replaceAll(ano + "000", ""));
-        valor = new Valor(valor.getString().replaceAll(ano + "/", ""));
-        valor = new Valor(valor.getString().replaceAll("/" + ano, ""));
-        valor = new Valor(valor.getString().replaceAll("000" + ano, ""));
-        valor = new Valor(valor.getString().replaceAll("[^a-zA-Z0-9 .-]", ""));
-
-        return valor;
     }
 }
