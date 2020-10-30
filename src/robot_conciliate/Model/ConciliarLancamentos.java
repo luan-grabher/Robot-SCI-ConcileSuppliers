@@ -1,14 +1,11 @@
 package robot_conciliate.Model;
 
-import Auxiliar.Valor;
-import Executor.View.Carregamento;
-import robot_conciliate.Control.Controller;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -17,9 +14,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lctocontabil.Entity.ContabilityEntry;
-import lctocontabil.Entity.LctoContabil;
 import lctocontabil.Model.ContabilityEntries_Model;
-import lctocontabil.Model.Filtro;
 
 public class ConciliarLancamentos {
 
@@ -37,6 +32,9 @@ public class ConciliarLancamentos {
     private Predicate<Entry<Integer, ContabilityEntry>> accountPredicate;
     private Predicate<Entry<Integer, ContabilityEntry>> enterprisePredicate;
     private Predicate<Entry<Integer, ContabilityEntry>> conciledPredicate;
+
+    private final static Integer PARTICIPANT_TYPE_CREDIT = 0;
+    private final static Integer PARTICIPANT_TYPE_DEBIT = 1;
 
     public ConciliarLancamentos(Map<Integer, ContabilityEntry> entries, Integer enterprise, Integer account, Integer participant, Calendar dateStart, Calendar dateEnd) {
         this.enterprise = enterprise;
@@ -91,8 +89,9 @@ public class ConciliarLancamentos {
 
     /**
      * Concilia lançamentos pelo débito e crédito dos documentos
-     * 
-     * @param participant Código de participante para os filtros de documento de credito e debito
+     *
+     * @param participant Código de participante para os filtros de documento de
+     * credito e debito
      */
     public void conciliateByDocuments(Integer participant) {
         for (Entry<String, String> entry : documents.entrySet()) {
@@ -101,7 +100,7 @@ public class ConciliarLancamentos {
 
             Predicate<Entry<Integer, ContabilityEntry>> creditPredicate = documentPredicate.and(e -> e.getValue().getParticipantCredit().equals(participant));
             Predicate<Entry<Integer, ContabilityEntry>> debitPredicate = documentPredicate.and(e -> e.getValue().getParticipantDebit().equals(participant));
-            
+
             conciliateByPredicates(creditPredicate, debitPredicate);
         }
     }
@@ -176,181 +175,148 @@ public class ConciliarLancamentos {
         }
     }
 
-    /*--------------------------------------FUNÇÕES DE ANTIGAS-------------------------------------------*/
- /*--------------------------------------FUNÇÕES DE ANTIGAS-------------------------------------------*/
- /*--------------------------------------FUNÇÕES DE ANTIGAS-------------------------------------------*/
- /*--------------------------------------FUNÇÕES DE ANTIGAS-------------------------------------------*/
- /*--------------------------------------FUNÇÕES DE ANTIGAS-------------------------------------------*/
- /*--------------------------------------FUNÇÕES DE ANTIGAS-------------------------------------------*/
- /*--------------------------------------FUNÇÕES DE ANTIGAS-------------------------------------------*/
- /*--------------------------------------FUNÇÕES DE ANTIGAS-------------------------------------------*/
- /*--------------------------------------FUNÇÕES DE ANTIGAS-------------------------------------------*/
-    private static final int TIPO_PARTICIPANTE = 1;
-    private static final int TIPO_CONTACTB = 2;
-
-    private static Predicate<LctoContabil> filtroContaCredito;
-    private static Predicate<LctoContabil> filtroContaDebito;
-    private static Predicate<LctoContabil> filtroConta;
-
-    private static Integer tipoConta;
-    private static List<LctoContabil> lctos;
-
-    private static Integer dataInicial;
-    private static Integer dataFinal;
-
-    private static String tipoContaContabil;
-
-    private static final List<Integer> contasAtuais = new ArrayList<>();
-
-    public static void conciliar(Integer codigoEmpresa, Integer contaCtb, String tipoContaContabil, List<LctoContabil> lctos, Integer dataInicial, Integer dataFinal) {
-        //Define Lançamentos
-        ConciliarLancamentos.enterprise = codigoEmpresa;
-        ConciliarLancamentos.accountFilter = contaCtb;
-        ConciliarLancamentos.lctos = lctos;
-        ConciliarLancamentos.dataInicial = dataInicial;
-        ConciliarLancamentos.dataFinal = dataFinal;
-        ConciliarLancamentos.tipoContaContabil = tipoContaContabil;
-
-        iniciarConciliação();
-        exibirResultado();
-    }
-
-    public static void iniciarConciliação() {
-        if (tipoContaContabil.toLowerCase().equals("participante")) {
-            conciliarParticipantesOuContasCtb(TIPO_PARTICIPANTE);
-        } else {
-            conciliarParticipantesOuContasCtb(TIPO_CONTACTB);
-        }
-    }
-
-    private static void exibirResultado() {
-        long conciliados = lctos.stream().filter(Filtro.conciliado()).count();
-        long naoConciliados = lctos.stream().filter(Filtro.naoConciliado()).count();
-
-        double creditoConciliados = lctos.stream().filter(Filtro.conciliado().and(Filtro.contaCredito(accountFilter))).mapToDouble(l -> l.getValor().getDouble()).sum();
-        double debitoConciliados = lctos.stream().filter(Filtro.conciliado().and(Filtro.contaDebito(accountFilter))).mapToDouble(l -> l.getValor().getDouble()).sum();
-
-        StringBuilder resultado = new StringBuilder();
-
-        resultado.append("Lctos totais: ").append(lctos.size()).append("<br>");
-        resultado.append("Lctos conciliados: ").append(conciliados).append("<br>");
-        resultado.append("Lctos NÃO conciliados: ").append(naoConciliados).append("<br>");
-        resultado.append("TOTAIS:<br>");
-        resultado.append("Débito Conciliados: ").append(creditoConciliados).append("<br>");
-        resultado.append("Crédito Conciliados: ").append(debitoConciliados).append("<br>");
-
-        Controller.setResultado(resultado.toString());
-        System.out.println(resultado.toString().replaceAll("<br>", "\n"));
-    }
-
-    /*--------------------------------------FUNÇÕES DE CONTROLE-------------------------------------------*/
     /**
-     * Faz conciliação de cada participante na lista
+     * Percorre todos lançamentos e procura por valores iguais, múltiplos
+     *
+     * @param participant Codigo do participante
      */
-    private static void conciliarParticipantesOuContasCtb(int tipoContaDefinida) {
-        tipoConta = tipoContaDefinida;
+    private void conciliateByValues(Integer participant) {
+        //Cria predicatos
+        Predicate<Entry<Integer, ContabilityEntry>> participantCreditPredicate = e -> e.getValue().getParticipantCredit().equals(participant);
+        Predicate<Entry<Integer, ContabilityEntry>> participantDebitPredicate = e -> e.getValue().getParticipantDebit().equals(participant);
+        Predicate<Entry<Integer, ContabilityEntry>> participantPredicate = participantCreditPredicate.or(participantDebitPredicate);
 
-        popularContasAtuais();
+        //Percorre todos lançamentos
+        for (Entry<Integer, ContabilityEntry> entry : entries.entrySet()) {
+            Integer key = entry.getKey();
+            ContabilityEntry ce = entry.getValue();
 
-        Carregamento barra = new Carregamento("Conciliando contas", 0, contasAtuais.size());
+            //Se não estiver conciliado
+            if (!ce.isConciliated()) {
 
-        int count = 0;
-        for (Integer conta : contasAtuais) {
-            count++;
-            barra.atualizar(count);
+                //Define onde a conta está, se em crédito ou em débito 
+                Integer participantType = ce.getParticipantCredit().equals(participant) ? PARTICIPANT_TYPE_CREDIT : PARTICIPANT_TYPE_DEBIT;
 
-            participantFilter = conta;
-            definirFiltrosConta();
-            conciliarParticipanteOuContaCtb();
-        }
+                //Define os totais de credito e débito
+                Map<Integer, BigDecimal> credits = new LinkedHashMap<>();
+                Map<Integer, BigDecimal> debits = new LinkedHashMap<>();
 
-        barra.dispose();
-    }
+                //Coloca o valor do lançamento atual verificado na soma                
+                if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {
+                    credits.put(key, ce.getValue());
+                } else if (participantType.equals(PARTICIPANT_TYPE_DEBIT)) {
+                    debits.put(key, ce.getValue());
+                }
 
-    /**
-     * Faz todos os tipos de conciliação naquele participante
-     */
-    private static void conciliarParticipanteOuContaCtb() {
-        //Se tiver conciliado tudo, não tem porque verificar as outras coisas
-        if (!conciliaçãoBruta()) {
-            conciliaçãoSaldo();
-            conciliarDocumentos();
-            conciliaçãoValores();
-            conciliaçãoPróximosValoresContasInversas();
-        }
-    }
+                //Enquanto o crédito for diferente do débito
+                while (credits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add).compareTo(
+                        debits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add)
+                ) != 0) {
 
-    /*--------------------------------------FUNÇÕES DE LISTAS-------------------------------------------*/
-    /**
-     * Cria lista de todos os participantes sem repetir que estão nos
-     * lançamentos
-     */
-    private static void popularContasAtuais() {
-        for (LctoContabil lcto : lctos) {
-            if (tipoConta == TIPO_PARTICIPANTE) {
-                adicionaContaNaLista(lcto.getTerceiroDeb());
-                adicionaContaNaLista(lcto.getTerceiroCred());
-            } else {
-                adicionaContaNaLista(lcto.getDeb());
-                adicionaContaNaLista(lcto.getCred());
-            }
-        }
-    }
+                    BigDecimal totalCredit = credits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal totalDebit = debits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
 
-    /**
-     * Adiciona participante na lista se ele não estiver na lista
-     */
-    private static void adicionaContaNaLista(Integer conta) {
-        if (conta > 0) {
-            if (contasAtuais.stream().noneMatch(p -> Objects.equals(p, conta))) {
-                contasAtuais.add(conta);
-            }
-        }
-    }
+                    //Se tiver mais credito do que debito, procura no debito
+                    if (totalCredit.compareTo(totalDebit) == 1) {
+                        if (findEntryWithDiference(debits, totalCredit, totalDebit, participantDebitPredicate)) {
+                            //Adicionou o debito, entao pode vazar
+                            break;
+                        }
+                    } else {
+                        if (findEntryWithDiference(credits, totalDebit, totalCredit, participantCreditPredicate)) {
+                            //Adicionou o credito, entao pode vazar
+                            break;
+                        }
+                    }
+                    
+                    //Procura valor multiplo
+                    Optional<Entry<Integer, ContabilityEntry>> multipleEnry = entries.entrySet().stream().filter(
+                            conciledPredicate.negate()
+                            .and(participantDebitPredicate)                            
+                            .and(predicateNotInMap(debits))
+                            .and(Filtro.valorMenorQue(diferenca))
+                            .and(Filtro.multiploDe(valor))
+                    ).findFirst();
 
-    /**
-     * Retorna lista de documentos de um participante
-     */
-    private static List<String> getListaDocumentosConta() {
-        List<String> documentos = new ArrayList<>();
-        lctos.stream().filter(filtroConta).forEach(lcto -> {
-            String doc = lcto.getDocumento().getString();
-            if (!doc.equals("")) {
-                if (documentos.stream().noneMatch(d -> d.equals(doc))) {
-                    documentos.add(doc);
+                    if (lctoMultiplo.isPresent()) {
+                    }
                 }
             }
-        });
+        }
+        /**
+         * Encontra o lançamento com valor reverso (diferença) e se encontrar
+         * adiciona no mapa informado
+         *
+         * @param mapValues mapa com valores que serão implementados caso ache
+         * @param total Total do valor maior
+         * @param totalReverse total do valor menor(reverso, valor procurado)
+         * @param participantReversePredicate Predicato para filtrar o
+         * participante reverso
+         *
+         * @return Retorna TRUE caso encontre e implemente no mapa
+         * @return Retorna FALSE caso não encontre e não implementa no mapa
+         */
+    private boolean findEntryWithDiference(Map<Integer, BigDecimal> mapValues, BigDecimal total, BigDecimal totalReverse, Predicate<Entry<Integer, ContabilityEntry>> participantReversePredicate) {
+        BigDecimal diference = total.add(totalReverse.negate());
 
-        return documentos;
-    }
-
-    /*--------------------------------------FUNÇÕES DE CONCILIAÇÃO-------------------------------------------*/
-    /**
-     * Confronto direto de débito VS crédito do participante
-     */
-    private static boolean conciliaçãoBruta() {
-        Predicate<LctoContabil> filtroCredito = Filtro.naoConciliado().and(filtroContaCredito);
-        Predicate<LctoContabil> filtroDebito = Filtro.naoConciliado().and(filtroContaDebito);
-        return conciliação(filtroCredito, filtroDebito);
-    }
-
-    /**
-     * Concilia lançamentos pelo número de documento quando o total de crédito
-     * for igual ao total de débito
-     */
-    private static void conciliarDocumentos() {
-        //Criar lista de documentos
-        List<String> documentos = getListaDocumentosConta();
-
-        //Fazer conciliação do documento
-        for (String documento : documentos) {
-            Predicate<LctoContabil> filtroCredito = Filtro.naoConciliado().and(Filtro.documento(documento)).and(filtroContaCredito);
-            Predicate<LctoContabil> filtroDebito = Filtro.naoConciliado().and(Filtro.documento(documento)).and(filtroContaDebito);
-            conciliação(filtroCredito, filtroDebito);
+        //Procura lançamento com valor igual
+        Optional<Entry<Integer, ContabilityEntry>> entryWithEqualValue = getFirstEntryWithValue(participantReversePredicate, diference, mapValues);
+        //Se encontrar adiciona na lista de debitos
+        if (entryWithEqualValue.isPresent()) {
+            mapValues.put(entryWithEqualValue.get().getKey(), entryWithEqualValue.get().getValue().getValue());
+            return true;
+        } else {
+            return false;
         }
     }
 
+    /**
+     * Retorna ou não lançamento com o valor procurado
+     *
+     * @param map Mapa que o lançamento não pode estar
+     * @param predicateParticipant Predicato para filtrar o participante
+     * @param value Valor procurado
+     *
+     * @return Lançamento opcional, pode ser verificado com "isPresent"
+     */
+    private Optional<Entry<Integer, ContabilityEntry>> getFirstEntryWithValue(Predicate<Entry<Integer, ContabilityEntry>> predicateParticipant, BigDecimal value, Map<Integer, BigDecimal> map) {
+        return entries.entrySet().stream().filter(
+                predicateParticipant
+                        .and(predicateValueEqual(value))
+                        .and(conciledPredicate.negate())
+                        .and(predicateNotInMap(map))
+        ).findFirst();
+    }
+
+    /**
+     * Retorna predicato para filtrar o valor bigdecimal
+     *
+     * @param value Valor BigDecimal que deve filtrar
+     * @return Retorna o predicato para filtrar valor igual ao informado
+     */
+    private Predicate<Entry<Integer, ContabilityEntry>> predicateValueEqual(BigDecimal value) {
+        return e -> e.getValue().getValue().compareTo(value) == 0;
+    }
+
+    /**
+     * Retorna predicato para encontrar os lançamentos que nao estao no mapa
+     *
+     * @param map Mapa com valores bigdecimal e chaves
+     * @return Retorna o predicato para filtrar lançamentos que NÃO estejam
+     * naquele mapa
+     */
+    private Predicate<Entry<Integer, ContabilityEntry>> predicateNotInMap(Map<Integer, BigDecimal> map) {
+        return e -> !map.containsKey(e.getKey());
+    }
+
+    /*--------------------------------------FUNÇÕES DE ANTIGAS-------------------------------------------*/
+ /*--------------------------------------FUNÇÕES DE ANTIGAS-------------------------------------------*/
+
+ /*--------------------------------------FUNÇÕES DE CONCILIAÇÃO-------------------------------------------*/
+    /**
+     * Percorre todos lctos, não percorre por stream de conciliados porque no
+     * meio do processo podem haver conciliações
+     */
     private static void conciliaçãoValores() {
         //Percorre todos lctos, não percorre por stream de conciliados porque no meio do processo podem haver conciliações
 
@@ -380,33 +346,19 @@ public class ConciliarLancamentos {
                 //Enquanto a diferença for diferente de zero
                 while (diferenca.compareTo(BigDecimal.ZERO) != 0) {
                     LctoContabil lctoEncontrado = null;
-
-                    //Procura um valor igual a diferença
-                    Optional<LctoContabil> lctoIgualDiferenca = lctos.stream().filter(
+                    //Procura valor multiplo
+                    Optional<LctoContabil> lctoMultiplo = lctos.stream().filter(
                             Filtro.naoConciliado()
                                     .and(filtroContaInversa)
                                     .and(Filtro.naoEstaNaLista(lctosAConciliar))
-                                    .and(Filtro.valorIgual(diferenca))
+                                    .and(Filtro.valorMenorQue(diferenca))
+                                    .and(Filtro.multiploDe(valor))
                     ).findFirst();
 
-                    //Se encontrar valor igual a diferença
-                    if (lctoIgualDiferenca.isPresent()) {
-                        lctoEncontrado = lctoIgualDiferenca.get();
+                    if (lctoMultiplo.isPresent()) {
+                        lctoEncontrado = lctoMultiplo.get();
                     } else {
-                        //Procura valor multiplo
-                        Optional<LctoContabil> lctoMultiplo = lctos.stream().filter(
-                                Filtro.naoConciliado()
-                                        .and(filtroContaInversa)
-                                        .and(Filtro.naoEstaNaLista(lctosAConciliar))
-                                        .and(Filtro.valorMenorQue(diferenca))
-                                        .and(Filtro.multiploDe(valor))
-                        ).findFirst();
-
-                        if (lctoMultiplo.isPresent()) {
-                            lctoEncontrado = lctoMultiplo.get();
-                        } else {
-                            break;
-                        }
+                        break;
                     }
 
                     //Se tiver encontrado multiplo ou igual
@@ -476,41 +428,6 @@ public class ConciliarLancamentos {
             if (valorLcto.compareTo(valorContrario) == 0) {
                 conciliarLista(lctosConciliar);
             }
-        }
-    }
-
-    private static void conciliarLista(List<LctoContabil> lctosConciliar) {
-        lctosConciliar.stream().forEach(l -> {
-            l.conciliar();
-        });
-    }
-
-    /**
-     * Concilia lançamentos conforme filtro de crédito e débito passado
-     */
-    private static boolean conciliação(Predicate<LctoContabil> filtroCredito, Predicate<LctoContabil> filtroDebito) {
-        //Busca total crédito e débito
-        double credito = lctos.stream().filter(filtroCredito).mapToDouble(l -> l.getValor().getDouble()).sum();
-        double debito = lctos.stream().filter(filtroDebito).mapToDouble(l -> l.getValor().getDouble()).sum();
-
-        if (credito != 0.0 && debito != 0.0) {
-
-            Valor valorCredito = new Valor(Valor.roundDouble(credito, 2));
-            Valor valorDebito = new Valor(Valor.roundDouble(debito, 2));
-
-            //Se valores fecharem
-            if (valorCredito.getBigDecimal().compareTo(valorDebito.getBigDecimal()) == 0) {
-                //Concilia todos lançamentos daquele participante
-                lctos.stream().filter(filtroCredito.or(filtroDebito)).forEach(l -> {
-                    l.conciliar();
-                });
-
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            return false;
         }
     }
 
