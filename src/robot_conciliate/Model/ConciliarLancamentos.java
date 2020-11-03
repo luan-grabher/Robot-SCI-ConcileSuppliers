@@ -184,7 +184,6 @@ public class ConciliarLancamentos {
         //Cria predicatos
         Predicate<Entry<Integer, ContabilityEntry>> participantCreditPredicate = e -> e.getValue().getParticipantCredit().equals(participant);
         Predicate<Entry<Integer, ContabilityEntry>> participantDebitPredicate = e -> e.getValue().getParticipantDebit().equals(participant);
-        Predicate<Entry<Integer, ContabilityEntry>> participantPredicate = participantCreditPredicate.or(participantDebitPredicate);
 
         //Percorre todos lançamentos
         for (Entry<Integer, ContabilityEntry> entry : entries.entrySet()) {
@@ -215,50 +214,74 @@ public class ConciliarLancamentos {
 
                     BigDecimal totalCredit = credits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
                     BigDecimal totalDebit = debits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal diference;
 
                     //Se tiver mais credito do que debito, procura no debito
                     if (totalCredit.compareTo(totalDebit) == 1) {
-                        if (findEntryWithDiference(debits, totalCredit, totalDebit, participantDebitPredicate)) {
+                        //Procura o valor e adiciona no mapa se ecnontrar
+                        diference = totalCredit.add(totalDebit.negate());
+                        if (findEntryWithDiference(debits, diference, participantDebitPredicate)) {
                             //Adicionou o debito, entao pode vazar
                             break;
                         }
                     } else {
-                        if (findEntryWithDiference(credits, totalDebit, totalCredit, participantCreditPredicate)) {
+                        //Procura o valor e adiciona no mapa se ecnontrar
+                        diference = totalDebit.add(totalCredit.negate());
+                        if (findEntryWithDiference(credits, diference, participantCreditPredicate)) {
                             //Adicionou o credito, entao pode vazar
                             break;
                         }
                     }
-                    
+
                     //Procura valor multiplo
-                    Optional<Entry<Integer, ContabilityEntry>> multipleEnry = entries.entrySet().stream().filter(
+                    Optional<Entry<Integer, ContabilityEntry>> multipleEntry = entries.entrySet().stream().filter(
                             conciledPredicate.negate()
-                            .and(participantDebitPredicate)                            
-                            .and(predicateNotInMap(debits))
-                            .and(Filtro.valorMenorQue(diferenca))
-                            .and(Filtro.multiploDe(valor))
+                                    .and(participantDebitPredicate)
+                                    .and(predicateNotInMap(debits))
+                                    .and(e -> e.getValue().getValue().compareTo(diference) == -1)//Menor que a diferença
+                                    .and(e -> ce.getValue().remainder(e.getValue().getValue()).compareTo(BigDecimal.ZERO) == 0)//multiplo do valor original                            
                     ).findFirst();
 
-                    if (lctoMultiplo.isPresent()) {
+                    //Se existir o múltiplo, adiciona na lista de reversa
+                    if (multipleEntry.isPresent()) {
+                        if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {
+                            debits.put(multipleEntry.get().getKey(), multipleEntry.get().getValue().getValue());
+                        } else {
+                            credits.put(multipleEntry.get().getKey(), multipleEntry.get().getValue().getValue());
+                        }
                     }
+                }
+
+                //Verifica se debito fecha com credito
+                if (credits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add).compareTo(
+                        debits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add)
+                ) == 0) {
+                    //Concilia lançamentos de crédito e de débito
+                    debits.entrySet().stream().map((entryDebit) -> entryDebit.getKey()).forEachOrdered((keyDebit) -> {
+                        entries.get(keyDebit).conciliate();
+                    });
+                    credits.entrySet().stream().map((entryCredit) -> entryCredit.getKey()).forEachOrdered((keyCredit) -> {
+                        entries.get(keyCredit).conciliate();
+                    });
                 }
             }
         }
-        /**
-         * Encontra o lançamento com valor reverso (diferença) e se encontrar
-         * adiciona no mapa informado
-         *
-         * @param mapValues mapa com valores que serão implementados caso ache
-         * @param total Total do valor maior
-         * @param totalReverse total do valor menor(reverso, valor procurado)
-         * @param participantReversePredicate Predicato para filtrar o
-         * participante reverso
-         *
-         * @return Retorna TRUE caso encontre e implemente no mapa
-         * @return Retorna FALSE caso não encontre e não implementa no mapa
-         */
-    private boolean findEntryWithDiference(Map<Integer, BigDecimal> mapValues, BigDecimal total, BigDecimal totalReverse, Predicate<Entry<Integer, ContabilityEntry>> participantReversePredicate) {
-        BigDecimal diference = total.add(totalReverse.negate());
+    }
 
+    /**
+     * Encontra o lançamento com valor reverso (diferença) e se encontrar
+     * adiciona no mapa informado
+     *
+     * @param mapValues mapa com valores que serão implementados caso ache
+     * @param total Total do valor maior
+     * @param totalReverse total do valor menor(reverso, valor procurado)
+     * @param participantReversePredicate Predicato para filtrar o participante
+     * reverso
+     *
+     * @return Retorna TRUE caso encontre e implemente no mapa
+     * @return Retorna FALSE caso não encontre e não implementa no mapa
+     */
+    private boolean findEntryWithDiference(Map<Integer, BigDecimal> mapValues, BigDecimal diference, Predicate<Entry<Integer, ContabilityEntry>> participantReversePredicate) {
         //Procura lançamento com valor igual
         Optional<Entry<Integer, ContabilityEntry>> entryWithEqualValue = getFirstEntryWithValue(participantReversePredicate, diference, mapValues);
         //Se encontrar adiciona na lista de debitos
@@ -309,77 +332,60 @@ public class ConciliarLancamentos {
         return e -> !map.containsKey(e.getKey());
     }
 
-    /*--------------------------------------FUNÇÕES DE ANTIGAS-------------------------------------------*/
- /*--------------------------------------FUNÇÕES DE ANTIGAS-------------------------------------------*/
+    private void conciliateAfterValues(Integer participant) {
+        //Cria predicatos
+        Predicate<Entry<Integer, ContabilityEntry>> participantCreditPredicate = e -> e.getValue().getParticipantCredit().equals(participant);
+        Predicate<Entry<Integer, ContabilityEntry>> participantDebitPredicate = e -> e.getValue().getParticipantDebit().equals(participant);
 
- /*--------------------------------------FUNÇÕES DE CONCILIAÇÃO-------------------------------------------*/
-    /**
-     * Percorre todos lctos, não percorre por stream de conciliados porque no
-     * meio do processo podem haver conciliações
-     */
-    private static void conciliaçãoValores() {
-        //Percorre todos lctos, não percorre por stream de conciliados porque no meio do processo podem haver conciliações
+        //Percorre todos lançamentos
+        for (Entry<Integer, ContabilityEntry> entry : entries.entrySet()) {
+            Integer key = entry.getKey();
+            ContabilityEntry ce = entry.getValue();
 
-        lctos.stream().filter(Filtro.naoConciliado().and(filtroConta)).forEach(lcto -> {
-            //se não estiver conciliado
-            if (!lcto.isConciliado()) {
-                //Pega conta de crédito
-                int contaVerificada = tipoConta == TIPO_PARTICIPANTE ? lcto.getTerceiroCred() : lcto.getCred();
+            //Se não estiver conciliado
+            if (!ce.isConciliated()) {
+                //Define onde a conta está, se em crédito ou em débito 
+                Integer participantType = ce.getParticipantCredit().equals(participant) ? PARTICIPANT_TYPE_CREDIT : PARTICIPANT_TYPE_DEBIT;
 
-                //Se o lançamento for de crédito (credito == conta atual) --> 1
-                // --- CRED: 1
-                // --- DEB: -1
-                int debOuCred = Objects.equals(contaVerificada, participantFilter) ? 1 : -1;
+                Predicate<Entry<Integer, ContabilityEntry>> participantPredicate;
+                Predicate<Entry<Integer, ContabilityEntry>> reverseParticipantPredicate;
+                
+                //Define os totais de credito e débito
+                Map<Integer, BigDecimal> reverseValues = new LinkedHashMap<>();
 
-                //o filtro inverso são as contas de crédito se for débito (-1)
-                Predicate<LctoContabil> filtroContaInversa = debOuCred == -1 ? filtroContaCredito : filtroContaDebito;
-
-                //Define lista para conciliar depois
-                List<LctoContabil> lctosAConciliar = new ArrayList<>();
-                lctosAConciliar.add(lcto);
-
-                //Define valor
-                BigDecimal valor = lcto.getValor().getBigDecimal();
-                //Define diferença que falta
-                BigDecimal diferenca = new BigDecimal(valor.toString());
-
-                //Enquanto a diferença for diferente de zero
-                while (diferenca.compareTo(BigDecimal.ZERO) != 0) {
-                    LctoContabil lctoEncontrado = null;
-                    //Procura valor multiplo
-                    Optional<LctoContabil> lctoMultiplo = lctos.stream().filter(
-                            Filtro.naoConciliado()
-                                    .and(filtroContaInversa)
-                                    .and(Filtro.naoEstaNaLista(lctosAConciliar))
-                                    .and(Filtro.valorMenorQue(diferenca))
-                                    .and(Filtro.multiploDe(valor))
-                    ).findFirst();
-
-                    if (lctoMultiplo.isPresent()) {
-                        lctoEncontrado = lctoMultiplo.get();
-                    } else {
-                        break;
-                    }
-
-                    //Se tiver encontrado multiplo ou igual
-                    if (lctoEncontrado != null) {
-                        //Atualiza diferenca
-                        diferenca = diferenca.subtract(lctoEncontrado.getValor().getBigDecimal());
-                        lctosAConciliar.add(lctoEncontrado);
-                    }
+                //Define predicatos dos participantes                
+                if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {
+                    participantPredicate = participantCreditPredicate;
+                    reverseParticipantPredicate = participantDebitPredicate;
+                } else{
+                    participantPredicate = participantDebitPredicate;
+                    reverseParticipantPredicate = participantCreditPredicate;
                 }
-
-                if (diferenca.compareTo(BigDecimal.ZERO) == 0) {
-                    conciliarLista(lctosAConciliar);
-                }
+                
+                //Cria lista de lançamentos reversos menores e depois
+                reverses = entries.entrySet().stream().filter(
+                        reverseParticipantPredicate
+                        .and(conciledPredicate.negate())
+                        .and(e -> e.getValue().getDate().compareTo(ce.getDate()) >= 0)
+                        .and(e -> e.getValue().getValue().compareTo(ce.getValue()) <= 0)
+                ).map(e-> e.getKey());
+                
+                //Oredenar essa lista ^^^^^^^ por data e depois por chave
+                //
+                // vai adicionando valores para tentar fechar com o valor
+                //
+                //
+                //
+                //                        
             }
-        });
+        }
     }
 
     /**
      * Concilia se os proximos valores em contra partida fecharem com o valor
      */
     private static void conciliaçãoPróximosValoresContasInversas() {
+        //Lançamentos da conta
         List<LctoContabil> lctosContaAtual = lctos.stream().filter(filtroConta.and(Filtro.naoConciliado())).collect(Collectors.toList());
 
         //Ordena por ordem de data e depois chave
@@ -429,12 +435,5 @@ public class ConciliarLancamentos {
                 conciliarLista(lctosConciliar);
             }
         }
-    }
-
-    /*--------------------------------------FUNÇÕES DE EXECUÇÃO-------------------------------------------*/
-    private static void definirFiltrosConta() {
-        filtroContaCredito = tipoConta == TIPO_PARTICIPANTE ? Filtro.participante_Credito(participantFilter) : Filtro.contaCredito(participantFilter);
-        filtroContaDebito = tipoConta == TIPO_PARTICIPANTE ? Filtro.participante_Debito(participantFilter) : Filtro.contaDebito(participantFilter);
-        filtroConta = tipoConta == TIPO_PARTICIPANTE ? Filtro.participante(participantFilter) : Filtro.conta(participantFilter);
     }
 }
