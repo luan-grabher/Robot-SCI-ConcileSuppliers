@@ -117,7 +117,8 @@ public class Controller {
             ConciliateContabilityEntries model = new ConciliateContabilityEntries(entries, enterprise, account, participant, startDate, endDate);
             model.setDefaultPredicates();
             model.createParticipantAndDcoumentList();
-            model.conciliateParticipants();          
+            model.conciliateParticipants();    
+            model.getInfos();
         }
     }
 }

@@ -48,11 +48,11 @@ public class Conciliate {
     public static String principal(Integer enterprise, Integer account, Integer participant, Calendar dateStart, Calendar dateEnd, boolean remakeConciliate) {
        
         //Se empresa for maior que zero
-        if (enterprise <= 0) {
+        if (enterprise == null || enterprise <= 0) {
             return "[ERRO] Código de empresa inválido.";
         }
         //Se conta contabil for maior que zero
-        if (account <= 0) {
+        if (account == null || account <= 0) {
             return "[ERRO] Conta contábil inválida.";
         }
         
