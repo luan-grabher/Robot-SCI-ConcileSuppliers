@@ -48,6 +48,16 @@ public class ConciliateContabilityEntries {
     }
 
     /**
+     * Retorna String com inforamções sobre conciliados
+     * 
+     * @return Retorna String com inforamções sobre conciliados
+     */
+    public String getInfos() {
+        return infos.toString();
+    }    
+    
+
+    /**
      * Define predicados padrões
      */
     public void setDefaultPredicates() {
