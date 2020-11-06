@@ -1,22 +1,21 @@
 package robot_conciliate.Model;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.text.NumberFormat;
 import java.util.Calendar;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lctocontabil.Entity.ContabilityEntry;
 import lctocontabil.Model.ContabilityEntries_Model;
 
-public class ConciliarLancamentos {
+public class ConciliateContabilityEntries {
 
     private final Integer enterprise;
     private final Integer accountFilter;
@@ -35,13 +34,17 @@ public class ConciliarLancamentos {
 
     private final static Integer PARTICIPANT_TYPE_CREDIT = 0;
     private final static Integer PARTICIPANT_TYPE_DEBIT = 1;
+    
+    private final StringBuilder infos = new StringBuilder("Conferências:\n");
 
-    public ConciliarLancamentos(Map<Integer, ContabilityEntry> entries, Integer enterprise, Integer account, Integer participant, Calendar dateStart, Calendar dateEnd) {
+    public ConciliateContabilityEntries(Map<Integer, ContabilityEntry> entries, Integer enterprise, Integer account, Integer participant, Calendar dateStart, Calendar dateEnd) {
+        this.entries = entries;
         this.enterprise = enterprise;
         this.accountFilter = account;
         this.participantFilter = participant;
         this.dateStart = dateStart;
         this.dateEnd = dateEnd;
+
     }
 
     /**
@@ -77,13 +80,48 @@ public class ConciliarLancamentos {
             }
         }
     }
+    
+    /**
+     * Mostra valores atuais de conciliados do participante com o Metodo Simple
+     * 
+     * @param participant Codigo participante
+     */
+    private void showConciledInfos(Integer participant){
+        NumberFormat nf = NumberFormat.getCurrencyInstance();
+        
+        Predicate<Entry<Integer, ContabilityEntry>> creditPredicate = conciledPredicate.and(e -> e.getValue().getParticipantCredit().equals(participant));
+        Predicate<Entry<Integer, ContabilityEntry>> debitPredicate = conciledPredicate.and(e -> e.getValue().getParticipantDebit().equals(participant));
+        
+        BigDecimal credit = entries.entrySet().stream().filter(creditPredicate).map(e -> e.getValue().getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal debit = entries.entrySet().stream().filter(debitPredicate).map(e -> e.getValue().getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
+                
+        infos.append("\nDébito: ").append(nf.format(debit));
+        infos.append("\nCrédito: ").append(nf.format(credit));
+    }
 
+    /**
+     * Concilia a lista de participantes atual
+     */
     public void conciliateParticipants() {
         for (Map.Entry<Integer, Integer> part : participants.entrySet()) {
             Integer participant = part.getKey();
-
+            
+            //Mostra informações
+            infos.append("\nParticipante ").append(participant).append(":\n");
+            infos.append("\nConciliados ANTES da conciliação:");
+            showConciledInfos(participant);
+            
             //Concilia por saldo
             conciliateByBalance(participant);
+            conciliateByDocuments(participant);
+            conciliateByValues(participant);
+            conciliateByAfterValues(participant);
+
+            //mostra informações
+            infos.append("\nConciliados APÓS conciliação:");
+            showConciledInfos(participant);
+            
+            infos.append("\n");
         }
     }
 
@@ -93,7 +131,7 @@ public class ConciliarLancamentos {
      * @param participant Código de participante para os filtros de documento de
      * credito e debito
      */
-    public void conciliateByDocuments(Integer participant) {
+    private void conciliateByDocuments(Integer participant) {
         for (Entry<String, String> entry : documents.entrySet()) {
             String document = entry.getKey();
             Predicate<Entry<Integer, ContabilityEntry>> documentPredicate = defaultPredicate.and(e -> e.getValue().getDocument().equals(document));
@@ -332,7 +370,13 @@ public class ConciliarLancamentos {
         return e -> !map.containsKey(e.getKey());
     }
 
-    private void conciliateAfterValues(Integer participant) {
+    /**
+     * Concilia valores do participante conforme proximos valores contrários.
+     * Para cada lançamento tenta fechar com os proximos lançamentos contrários.
+     * 
+     * @param participant Codigo de participante
+     */
+    private void conciliateByAfterValues(Integer participant) {
         //Cria predicatos
         Predicate<Entry<Integer, ContabilityEntry>> participantCreditPredicate = e -> e.getValue().getParticipantCredit().equals(participant);
         Predicate<Entry<Integer, ContabilityEntry>> participantDebitPredicate = e -> e.getValue().getParticipantDebit().equals(participant);
@@ -349,7 +393,7 @@ public class ConciliarLancamentos {
 
                 Predicate<Entry<Integer, ContabilityEntry>> participantPredicate;
                 Predicate<Entry<Integer, ContabilityEntry>> reverseParticipantPredicate;
-                
+
                 //Define os totais de credito e débito
                 Map<Integer, BigDecimal> reverseValues = new LinkedHashMap<>();
 
@@ -357,82 +401,58 @@ public class ConciliarLancamentos {
                 if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {
                     participantPredicate = participantCreditPredicate;
                     reverseParticipantPredicate = participantDebitPredicate;
-                } else{
+                } else {
                     participantPredicate = participantDebitPredicate;
                     reverseParticipantPredicate = participantCreditPredicate;
                 }
-                
+
                 //Cria lista de lançamentos reversos menores e depois
-                reverses = entries.entrySet().stream().filter(
-                        reverseParticipantPredicate
-                        .and(conciledPredicate.negate())
-                        .and(e -> e.getValue().getDate().compareTo(ce.getDate()) >= 0)
-                        .and(e -> e.getValue().getValue().compareTo(ce.getValue()) <= 0)
-                ).map(e-> e.getKey());
-                
-                //Oredenar essa lista ^^^^^^^ por data e depois por chave
-                //
-                // vai adicionando valores para tentar fechar com o valor
-                //
-                //
-                //
-                //                        
-            }
-        }
-    }
+                Map<Integer, ContabilityEntry> reverses = entries.entrySet().stream().filter(
+                        reverseParticipantPredicate //Conta contrária
+                                .and(conciledPredicate.negate()) //Não conciliado
+                                .and(e -> e.getValue().getDate().compareTo(ce.getDate()) >= 0) //Data posterior
+                                .and(e -> e.getValue().getValue().compareTo(ce.getValue()) <= 0) //Valor Menor ou igual
+                ).collect(
+                        Collectors.toMap(e -> e.getKey(), e -> e.getValue())
+                );
 
-    /**
-     * Concilia se os proximos valores em contra partida fecharem com o valor
-     */
-    private static void conciliaçãoPróximosValoresContasInversas() {
-        //Lançamentos da conta
-        List<LctoContabil> lctosContaAtual = lctos.stream().filter(filtroConta.and(Filtro.naoConciliado())).collect(Collectors.toList());
+                //Cria mapa com lançamentos ordenados por data
+                SortedMap<Calendar, ContabilityEntry> reversesSorted = new TreeMap<>();
+                //Popula mapa com lançamentos ordenados por data
+                reverses.entrySet().forEach((reverseEntry) -> {
+                    reversesSorted.put(reverseEntry.getValue().getDate(), reverseEntry.getValue());
+                });
 
-        //Ordena por ordem de data e depois chave
-        lctosContaAtual.sort(Comparator.comparing(l -> l.getData().getString() + l.getChave()));
+                //Cria lista que irá receber os lançamentos para conciliar
+                Map<Integer, ContabilityEntry> toConciliate = new HashMap<>();
 
-        int deb = -1;
-        int cred = 1;
+                //Cria variavel com soma dos reversos
+                BigDecimal calculated = new BigDecimal("0.00");
 
-        //Percorre todos lctos
-        for (int i = 0; i < lctosContaAtual.size(); i++) {
-            LctoContabil lcto = lctosContaAtual.get(i);
-            BigDecimal valorLcto = lcto.getValor().getBigDecimal();
-            BigDecimal valorContrario = new BigDecimal("0.00");
-
-            List<LctoContabil> lctosConciliar = new ArrayList<>();
-            lctosConciliar.add(lcto);
-
-            int debCred = Objects.equals(lcto.getTerceiroCred(), participantFilter) ? cred : deb;
-
-            //percorre proximos valores
-            for (int j = i + 1; j < lctosContaAtual.size(); j++) {
-                LctoContabil lctoContrario = lctosContaAtual.get(j);
-                BigDecimal valorJ = lctoContrario.getValor().getBigDecimal();
-                int debCredContrario = Objects.equals(lctoContrario.getTerceiroCred(), participantFilter) ? cred : deb;
-
-                //Se for lcto contrario
-                if (debCredContrario != debCred) {
-                    BigDecimal valorContrarioComAdição = valorContrario.add(valorJ);
-
-                    //Se valor contarrio com adição do valor for menor ou igual ao valor do lcto, adiciona
-                    if (valorContrarioComAdição.compareTo(valorLcto) <= 0) {
-                        valorContrario = valorContrarioComAdição;
-                        lctosConciliar.add(lctoContrario);
-
-                        if (valorLcto.compareTo(valorContrario) == 0) {
-                            break;
-                        }
+                //Percorre mapa ordenado por data
+                for (Entry<Calendar, ContabilityEntry> reverseEntry : reversesSorted.entrySet()) {
+                    ContabilityEntry obj = reverseEntry.getValue();
+                    //Se valor somado ao valor atual apurado reverso for menor ou igual ao valor verificado
+                    if (obj.getValue().add(calculated).compareTo(ce.getValue()) <= 0) {
+                        //Adiciona na lista de conciliar
+                        toConciliate.put(obj.getKey(), obj);
+                        //Soma no total de reversos
+                        calculated = calculated.add(obj.getValue());
+                        //Se não
+                    } else {
+                        //----Sai do loop
+                        break;
                     }
-                } else {
-                    //Sai das comparações
-                    break;
                 }
-            }
 
-            //Se tiver achado valor contrario
-            if (valorLcto.compareTo(valorContrario) == 0) {
-                conciliarLista(lctosConciliar);
+                // Se valor dos reversos for igual ao valor verificado
+                if (calculated.compareTo(ce.getValue()) == 0) {
+                    //Adiciona na lista o proprio lançamento atual
+                    toConciliate.put(key, ce);
+                    //Concilia lançamentos da lista de conciliar
+                    ContabilityEntries_Model.defineConciliatedsTo(toConciliate, Boolean.TRUE);
+                }
+
             }
         }
     }

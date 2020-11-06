@@ -9,7 +9,7 @@ import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class ConciliarUnico {
+public class Conciliate {
 
     private static String name;
 
@@ -70,9 +70,9 @@ public class ConciliarUnico {
                 executables.put("Zerando conciliação", control.new remakeConciliate());
             }
             
-            executables.put("Definindo número de documento", control.new setEntriesDocuments());
-            executables.put("Conciliando lançamentos", control.new conciliateEntries());
-            executables.put("Atualizando lançamentos no banco de dados", control.new updateEntriesOnDatabase());           
+            executables.put("Definir números de documento", control.new setEntriesDocuments());
+            executables.put("Conciliar lançamentos", control.new conciliateEntries());
+            //executables.put("Atualizar lançamentos no banco de dados", control.new updateEntriesOnDatabase());           
 
             //Execução
             Execution execution = new Execution(name);

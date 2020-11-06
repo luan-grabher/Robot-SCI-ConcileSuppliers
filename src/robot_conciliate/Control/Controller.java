@@ -6,7 +6,7 @@ import Entity.Executavel;
 import SimpleDotEnv.Env;
 import fileManager.FileManager;
 import robot_conciliate.Model.ChangeEntries;
-import robot_conciliate.Model.ConciliarLancamentos;
+import robot_conciliate.Model.ConciliateContabilityEntries;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -114,7 +114,10 @@ public class Controller {
 
         @Override
         public void run() {
-            //ConciliarLancamentos.conciliar(codigoEmpresa, contaCtb, tipoContaContabil, modeloLctos.getLctos(), dataInicial, dataFinal);
+            ConciliateContabilityEntries model = new ConciliateContabilityEntries(entries, enterprise, account, participant, startDate, endDate);
+            model.setDefaultPredicates();
+            model.createParticipantAndDcoumentList();
+            model.conciliateParticipants();          
         }
     }
 }
