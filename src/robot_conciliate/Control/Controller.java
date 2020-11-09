@@ -115,9 +115,12 @@ public class Controller {
         @Override
         public void run() {
             ConciliateContabilityEntries model = new ConciliateContabilityEntries(entries, enterprise, account, participant, startDate, endDate);
+            System.out.println("Definindo predicatos padrões");
             model.setDefaultPredicates();
+            System.out.println("Criando lista de participantes e documentos");
             model.createParticipantAndDcoumentList();
-            model.conciliateParticipants();    
+            System.out.println("Conciliando participantes");
+            model.conciliateParticipants();
             model.getInfos();
         }
     }

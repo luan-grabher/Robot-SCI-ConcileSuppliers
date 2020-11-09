@@ -19,6 +19,9 @@ public class teste {
         System.out.println(
                 Conciliate.principal(enterprise, account, participant, startDate, endDate, reworkConciliate)
         );
+        
+        //Terminar programa
+        System.exit(0);
     }
 
 }
