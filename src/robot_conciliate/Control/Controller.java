@@ -70,6 +70,10 @@ public class Controller {
             swaps.put("dateEnd", Dates.getCalendarInThisStringFormat(endDate, "YYYY-MM-dd"));
 
             entries.putAll(ContabilityEntries_Model.getEntries(sql, swaps));
+            
+            if(entries.isEmpty()){
+                throw new Error("Nenhum lançamento encontrado no banco!");
+            }
         }
     }
 
