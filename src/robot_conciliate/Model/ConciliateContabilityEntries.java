@@ -278,8 +278,10 @@ public class ConciliateContabilityEntries {
                     debits.put(key, ce.getValue());
                 }
 
-                //Enquanto o crédito for diferente do débito
-                while (credits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add).compareTo(
+                //Enquanto não tiver procurado mais do que o proprio numero de lançamentos e o crédito for diferente do débito
+                int searches = 0;
+                while ( searches <= entries.size() &&
+                        credits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add).compareTo(
                         debits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add)
                 ) != 0) {
 
