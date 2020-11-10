@@ -199,8 +199,8 @@ public class ConciliateContabilityEntries {
 
             //Pega saldo de credito e débito na data
             Map<String, BigDecimal> balances = ContabilityEntries_Model.selectAccountBalance(enterprise, accountFilter, participantCode, date);
-            //Compara o debito e credito
-            if (balances.get("credit").compareTo(balances.get("debit")) == 0) {
+            //Se o credito != 0 e o debito for igual ao credito
+            if (balances.get("credit").compareTo(BigDecimal.ZERO) != 0 && balances.get("credit").compareTo(balances.get("debit")) == 0) {
 
                 //Pega Lançamentos da conta e dos participantes
                 Map<Integer, ContabilityEntry> toConciliate = entries.entrySet().stream().filter(

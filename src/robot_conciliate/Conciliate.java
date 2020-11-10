@@ -59,7 +59,7 @@ public class Conciliate {
         //Verifica se data inicial é menor que data final
         if (dateStart.compareTo(dateEnd) < 0) {
             //Define Controle
-            Controller control = new Controller(enterprise, account, participant, dateEnd, dateEnd);
+            Controller control = new Controller(enterprise, account, participant, dateStart, dateEnd);
 
             //Definir funções executadas
             Map<String, Executavel> executables = new LinkedHashMap<>();

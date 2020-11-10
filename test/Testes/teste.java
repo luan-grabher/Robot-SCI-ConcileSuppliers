@@ -13,8 +13,8 @@ public class teste {
         Calendar endDate = Calendar.getInstance();
         Boolean reworkConciliate = false;
 
-        startDate.set(2020, 01, 01);
-        endDate.set(2020, 10, 31);
+        startDate.set(2020, 0, 1);
+        endDate.set(2020, 9, 31);
 
         System.out.println(
                 Conciliate.principal(enterprise, account, participant, startDate, endDate, reworkConciliate)
