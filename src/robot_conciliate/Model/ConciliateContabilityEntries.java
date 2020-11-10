@@ -37,6 +37,8 @@ public class ConciliateContabilityEntries {
     private final static Integer PARTICIPANT_TYPE_DEBIT = 1;
     
     private final StringBuilder infos = new StringBuilder("Conferências:\n");
+    private long entriesConciledBefore = 0;
+    private long entriesConciledAfter = 0;
 
     public ConciliateContabilityEntries(Map<Integer, ContabilityEntry> entries, Integer enterprise, Integer account, Integer participant, Calendar dateStart, Calendar dateEnd) {
         this.entries = entries;
@@ -45,7 +47,6 @@ public class ConciliateContabilityEntries {
         this.participantFilter = participant;
         this.dateStart = dateStart;
         this.dateEnd = dateEnd;
-
     }
 
     /**
@@ -54,6 +55,16 @@ public class ConciliateContabilityEntries {
      * @return Retorna String com inforamções sobre conciliados
      */
     public String getInfos() {
+        entriesConciledAfter = this.entries.entrySet().stream().filter(conciledPredicate).count();
+        
+        
+        BigDecimal beforePercent = new BigDecimal(entriesConciledBefore*100/entries.size());
+        BigDecimal afterPercent = new BigDecimal(entriesConciledAfter*100/entries.size());
+        
+        infos.append("TOTAL DE CONCILIADOS:");
+        infos.append("\nAntes: ").append(entriesConciledBefore).append(beforePercent.toString());
+        infos.append("\nDepois: ").append(entriesConciledAfter).append(afterPercent.toString());
+        
         return infos.toString();
     }    
     
@@ -69,6 +80,8 @@ public class ConciliateContabilityEntries {
 
         conciledPredicate = e -> e.getValue().isConciliated();
         defaultPredicate = conciledPredicate.negate();
+        
+        entriesConciledBefore = this.entries.entrySet().stream().filter(conciledPredicate).count();
     }
 
     /**
@@ -106,8 +119,8 @@ public class ConciliateContabilityEntries {
         BigDecimal credit = entries.entrySet().stream().filter(creditPredicate).map(e -> e.getValue().getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal debit = entries.entrySet().stream().filter(debitPredicate).map(e -> e.getValue().getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
                 
-        infos.append("\nDébito: ").append(nf.format(debit));
-        infos.append("\nCrédito: ").append(nf.format(credit));
+        infos.append("\n    Débito: ").append(nf.format(debit));
+        infos.append("\n    Crédito: ").append(nf.format(credit));
     }
 
     /**
@@ -126,8 +139,8 @@ public class ConciliateContabilityEntries {
             loading.updateBar(i + " de " + participants.size() + "(" + participant + ")", i);
             
             //Mostra informações
-            infos.append("\nParticipante ").append(participant).append(":\n");
-            infos.append("\nConciliados ANTES da conciliação:");
+            infos.append("\nPARTICIPANTE ").append(participant).append(":");
+            infos.append("\n    Conciliados ANTES da conciliação:");
             showConciledInfos(participant);
             
             //Concilia por saldo
@@ -137,7 +150,7 @@ public class ConciliateContabilityEntries {
             conciliateByAfterValues(participant);
 
             //mostra informações
-            infos.append("\nConciliados APÓS conciliação:");
+            infos.append("\n    Conciliados APÓS conciliação:");
             showConciledInfos(participant);
             
             infos.append("\n");
