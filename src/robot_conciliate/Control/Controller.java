@@ -3,6 +3,7 @@ package robot_conciliate.Control;
 import Auxiliar.Valor;
 import Dates.Dates;
 import Entity.Executavel;
+import Entity.Warning;
 import SimpleDotEnv.Env;
 import fileManager.FileManager;
 import robot_conciliate.Model.ChangeEntries;
@@ -125,7 +126,7 @@ public class Controller {
             model.createParticipantAndDcoumentList();
             System.out.println("Conciliando participantes");
             model.conciliateParticipants();
-            model.getInfos();
+            throw new Warning(model.getInfos());
         }
     }
 }
