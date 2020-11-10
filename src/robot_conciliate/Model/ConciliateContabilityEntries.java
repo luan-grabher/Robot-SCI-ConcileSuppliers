@@ -283,12 +283,13 @@ public class ConciliateContabilityEntries {
                         debits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add)
                 ) != 0) {
 
+                    //Soma lista de creditos e debitos atuais
                     BigDecimal totalCredit = credits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
                     BigDecimal totalDebit = debits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
                     BigDecimal diference;
 
-                    //Se tiver mais credito do que debito, procura no debito
-                    if (totalCredit.compareTo(totalDebit) == 1) {
+                    //Se o participante estiver no credito, procura no debito
+                    if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {
                         //Procura o valor e adiciona no mapa se ecnontrar
                         diference = totalCredit.add(totalDebit.negate());
                         if (findEntryWithDiference(debits, diference, participantDebitPredicate)) {
@@ -305,13 +306,25 @@ public class ConciliateContabilityEntries {
                     }
 
                     //Procura valor multiplo
-                    Optional<Entry<Integer, ContabilityEntry>> multipleEntry = entries.entrySet().stream().filter(
-                            conciledPredicate.negate()
-                                    .and(participantDebitPredicate)
-                                    .and(predicateNotInMap(debits))
-                                    .and(e -> e.getValue().getValue().compareTo(diference) == -1)//Menor que a diferença
-                                    .and(e -> ce.getValue().remainder(e.getValue().getValue()).compareTo(BigDecimal.ZERO) == 0)//multiplo do valor original                            
-                    ).findFirst();
+                    Optional<Entry<Integer, ContabilityEntry>> multipleEntry;
+                    
+                    if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {
+                        multipleEntry = entries.entrySet().stream().filter(
+                                conciledPredicate.negate()
+                                        .and(participantDebitPredicate)
+                                        .and(predicateNotInMap(debits))
+                                        .and(e -> e.getValue().getValue().compareTo(diference) == -1)//Menor que a diferença
+                                        .and(e -> ce.getValue().remainder(e.getValue().getValue()).compareTo(BigDecimal.ZERO) == 0)//multiplo do valor original                            
+                        ).findFirst();
+                    }else{
+                        multipleEntry = entries.entrySet().stream().filter(
+                                conciledPredicate.negate()
+                                        .and(participantCreditPredicate)
+                                        .and(predicateNotInMap(credits))
+                                        .and(e -> e.getValue().getValue().compareTo(diference) == -1)//Menor que a diferença
+                                        .and(e -> ce.getValue().remainder(e.getValue().getValue()).compareTo(BigDecimal.ZERO) == 0)//multiplo do valor original                            
+                        ).findFirst();
+                    }
 
                     //Se existir o múltiplo, adiciona na lista de reversa
                     if (multipleEntry.isPresent()) {
