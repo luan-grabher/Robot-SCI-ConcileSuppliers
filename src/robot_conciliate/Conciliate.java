@@ -66,14 +66,11 @@ public class Conciliate {
             
             executables.put("Conectando ao banco de dados", control.new setDatabase());
             
-            if(remakeConciliate){
-                executables.put("Zerando conciliação", control.new remakeConciliate());
-            }
-            
             executables.put("Buscando lançamentos no banco", control.new getDatabaseEntries());
+            if(remakeConciliate) executables.put("Zerando conciliação", control.new remakeConciliate());                                    
             executables.put("Definir números de documento", control.new setEntriesDocuments());
             executables.put("Conciliar lançamentos", control.new conciliateEntries());
-            //executables.put("Atualizar lançamentos no banco de dados", control.new updateEntriesOnDatabase());           
+            executables.put("Atualizar lançamentos no banco de dados", control.new updateEntriesOnDatabase());           
 
             //Execução
             Execution execution = new Execution(name);

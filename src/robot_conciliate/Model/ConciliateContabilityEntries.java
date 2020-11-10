@@ -61,9 +61,9 @@ public class ConciliateContabilityEntries {
         BigDecimal beforePercent = new BigDecimal(entriesConciledBefore*100/entries.size());
         BigDecimal afterPercent = new BigDecimal(entriesConciledAfter*100/entries.size());
         
-        infos.append("TOTAL DE CONCILIADOS:");
-        infos.append("\nAntes: ").append(entriesConciledBefore).append(beforePercent.toString());
-        infos.append("\nDepois: ").append(entriesConciledAfter).append(afterPercent.toString());
+        infos.append("TOTAL DE CONCILIADOS dos ").append(entries.size()).append(" lançamentos:");
+        infos.append("\nAntes: ").append(entriesConciledBefore).append(" (").append(beforePercent.toString()).append("%)");
+        infos.append("\nDepois: ").append(entriesConciledAfter).append(" (").append(afterPercent.toString()).append("%)");
         
         return infos.toString();
     }    
