@@ -1,5 +1,6 @@
 package robot_conciliate.Model;
 
+import SimpleView.Loading;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Calendar;
@@ -113,8 +114,16 @@ public class ConciliateContabilityEntries {
      * Concilia a lista de participantes atual
      */
     public void conciliateParticipants() {
-        for (Map.Entry<Integer, Integer> part : participants.entrySet()) {
+        Loading loading = new Loading("Conciliando participantes", 0, participants.size());
+        int i = 0;
+        
+        for (Map.Entry<Integer, Integer> part : participants.entrySet()) {            
+            //Pega numero participante
             Integer participant = part.getKey();
+            
+            //Atualiza barra
+            i++;
+            loading.updateBar(i + " de " + participants.size() + "(" + participant + ")", i);
             
             //Mostra informações
             infos.append("\nParticipante ").append(participant).append(":\n");
@@ -133,6 +142,8 @@ public class ConciliateContabilityEntries {
             
             infos.append("\n");
         }
+        
+        loading.dispose();
     }
 
     /**
