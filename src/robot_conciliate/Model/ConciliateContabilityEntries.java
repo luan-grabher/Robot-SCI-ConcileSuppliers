@@ -284,7 +284,8 @@ public class ConciliateContabilityEntries {
                         credits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add).compareTo(
                         debits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add)
                 ) != 0) {
-
+                    searches++;
+                    
                     //Soma lista de creditos e debitos atuais
                     BigDecimal totalCredit = credits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
                     BigDecimal totalDebit = debits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
