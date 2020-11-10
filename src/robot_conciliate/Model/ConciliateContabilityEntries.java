@@ -131,13 +131,9 @@ public class ConciliateContabilityEntries {
             showConciledInfos(participant);
             
             //Concilia por saldo
-            System.out.println(participant + " - Por Saldo");
             conciliateByBalance(participant);
-            System.out.println(participant + " - Por Documento");
             conciliateByDocuments(participant);
-            System.out.println(participant + " - Por Valor");
             conciliateByValues(participant);
-            System.out.println(participant + " - Por Valores seguintes");
             conciliateByAfterValues(participant);
 
             //mostra informações
