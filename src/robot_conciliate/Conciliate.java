@@ -80,7 +80,8 @@ public class Conciliate {
             execution.setShowMessages(false);
             execution.setExecutionMap(executables);
             execution.runExecutables();
-                     
+            
+            execution.endExecution(false);                     
             return execution.getRetorno();
         } else {
             return "[ERRO] A data inicial deve ser menor que a final!";
