@@ -248,10 +248,18 @@ public class ConciliateContabilityEntries {
         Predicate<Entry<Integer, ContabilityEntry>> participantCreditPredicate = e -> e.getValue().getParticipantCredit().equals(participant);
         Predicate<Entry<Integer, ContabilityEntry>> participantDebitPredicate = e -> e.getValue().getParticipantDebit().equals(participant);
 
+        //Loading
+        Loading loading = new Loading("Conciliando por valor Participante " + participant, 0, entries.size());
+        int i = 0;
+        
         //Percorre todos lançamentos
         for (Entry<Integer, ContabilityEntry> entry : entries.entrySet()) {
             Integer key = entry.getKey();
             ContabilityEntry ce = entry.getValue();
+            
+            //Loading
+            i++;
+            loading.updateBar(i + " de " + entries.size(), i);
 
             //Se não estiver conciliado
             if (!ce.isConciliated()) {
@@ -329,6 +337,9 @@ public class ConciliateContabilityEntries {
                 }
             }
         }
+        
+        //Acaba com a barra
+        loading.dispose();
     }
 
     /**
