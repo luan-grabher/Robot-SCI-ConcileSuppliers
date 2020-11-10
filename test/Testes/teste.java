@@ -8,7 +8,7 @@ public class teste {
     public static void main(String[] args) {
         Integer enterprise = 729;
         Integer account = 148;
-        Integer participant = 101759;
+        Integer participant = null;
         Calendar startDate = Calendar.getInstance();
         Calendar endDate = Calendar.getInstance();
         Boolean reworkConciliate = true;

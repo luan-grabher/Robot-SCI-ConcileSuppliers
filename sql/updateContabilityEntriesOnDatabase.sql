@@ -9,7 +9,7 @@ BDCODHIST = :historyCode,
 BDCOMPL = ':complement',
 BDDCTO = ':document',
 BDVALOR = :value,
-BDCONCC = :conciliedCredit
+BDCONCC = :conciliedCredit,
 BDCONCD = :conciliedDebit
 WHERE 
 BDCHAVE = :key
