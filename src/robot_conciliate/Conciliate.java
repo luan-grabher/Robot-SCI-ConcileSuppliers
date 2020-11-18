@@ -38,7 +38,7 @@ public class Conciliate {
         app.setNome(name);
 
         app.executar(
-                principal(codEmpresa, contaCTB, participant, dataFinal, dataFinal, zerarConciliacao)
+                principal(codEmpresa, contaCTB, participant, dataInicial, dataFinal, zerarConciliacao)
         );
 
         System.exit(0);
