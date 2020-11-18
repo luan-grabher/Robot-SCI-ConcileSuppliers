@@ -30,10 +30,9 @@ public class Conciliate {
         Calendar dataInicial = app.getParametro("dataInicial").getCalendar("ymd");
         Calendar dataFinal = app.getParametro("dataFinal").getCalendar("ymd");
         boolean zerarConciliacao = app.getParametro("zerarConciliacao").getBoolean();
-        String tipoContaContabil = app.getParametro("tipoContaContabil").getString();
 
-        String dataInicialStr =  Dates.getCalendarInThisStringFormat(dataInicial, "dd/MM/YYYY");
-        String dataFinalStr =  Dates.getCalendarInThisStringFormat(dataFinal, "dd/MM/YYYY");
+        String dataInicialStr =  Dates.getCalendarInThisStringFormat(dataInicial, "dd/MM/yyyy");
+        String dataFinalStr =  Dates.getCalendarInThisStringFormat(dataFinal, "dd/MM/yyyy");
         
         name = "Conciliação Automática -- #" + codEmpresa + " conta " + contaCTB + " " + dataInicialStr + " -> " + dataFinalStr;
         app.setNome(name);
