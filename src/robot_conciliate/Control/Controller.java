@@ -6,6 +6,7 @@ import Entity.Executavel;
 import Entity.Warning;
 import SimpleDotEnv.Env;
 import fileManager.FileManager;
+import java.io.File;
 import robot_conciliate.Model.ChangeEntries;
 import robot_conciliate.Model.ConciliateContabilityEntries;
 import java.util.Calendar;
@@ -43,11 +44,20 @@ public class Controller {
 
         @Override
         public void run() {
-            Database.setStaticObject(new Database(FileManager.getFile(databaseCfgFilePath)));
+            if(databaseCfgFilePath != null && !databaseCfgFilePath.equals("")){
+                File file = FileManager.getFile(databaseCfgFilePath);
+                if(file.exists()){
+                    Database.setStaticObject(new Database(file));
 
-            if (!Database.getDatabase().testConnection()) {
-                throw new Error("Erro ao conectar ao banco de dados!");
-            }
+                    if (!Database.getDatabase().testConnection()) {
+                        throw new Error("Erro ao conectar ao banco de dados!");
+                    }
+                }else{
+                    throw new Error("O arquivo de configuração não existe em '" + databaseCfgFilePath + "'");
+                }
+            }else{
+                throw new Error("Não foi encontrado o local do arquivo de configurção do banco.");
+            }                        
         }
     }
 
