@@ -4,6 +4,8 @@ import Dates.Dates;
 import Entity.Executavel;
 import Executor.Execution;
 import Robo.AppRobo;
+import SimpleDotEnv.Env;
+import java.io.File;
 import robot_conciliate.Control.Controller;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
@@ -13,9 +15,12 @@ public class Conciliate {
 
     private static String name;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) {        
         //Inicia robô
         AppRobo app = new AppRobo("Conciliação Automática");
+        
+        //Define Env
+        Env.setPath("\\\\zac\\Robos\\Tarefas\\Todas Empresas\\");
 
         //Define os parâmetros
         app.definirParametros();
@@ -34,10 +39,12 @@ public class Conciliate {
         String dataInicialStr =  Dates.getCalendarInThisStringFormat(dataInicial, "dd/MM/yyyy");
         String dataFinalStr =  Dates.getCalendarInThisStringFormat(dataFinal, "dd/MM/yyyy");
         
-        name = "Conciliação Automática -- #" + codEmpresa + " conta " + contaCTB + " " + dataInicialStr + " -> " + dataFinalStr;
+        name = "Conciliação Automática -- #" + codEmpresa + " conta " + contaCTB + " participante " + participant  + " " + dataInicialStr + " -> " + dataFinalStr;
         app.setNome(name);
 
         app.executar(
+                //new File("").getAbsolutePath() + "\n" +
+                //Env.getEnvs().toString()
                 principal(codEmpresa, contaCTB, participant, dataInicial, dataFinal, zerarConciliacao)
         );
 
