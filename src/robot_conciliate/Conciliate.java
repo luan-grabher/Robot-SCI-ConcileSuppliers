@@ -5,7 +5,7 @@ import Entity.Executavel;
 import Executor.Execution;
 import Robo.AppRobo;
 import SimpleDotEnv.Env;
-import java.io.File;
+import java.util.ArrayList;
 import robot_conciliate.Control.Controller;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
@@ -31,9 +31,22 @@ public class Conciliate {
         //Define variáveis
         Integer codEmpresa = app.getParametro("empresa").getInteger();
         Integer contaCTB = app.getParametro("contaCTB").getInteger();
+        List<Integer> accounts =  new ArrayList<>();
+        if(app.getParametro("contaCTB").getString().contains(";")){
+            String[] contas = app.getParametro("contaCTB").getString().split(";");
+            
+            for (String conta : contas) {
+                conta = conta.replaceAll("[^0-9]", ""); //Remove tudo que não for número
+                //Se a conta nao estiver em branco, contendo apenas numeros
+                if("".equals(conta)){
+                    //Adiciona na lista de contas
+                    accounts.add(Integer.valueOf(conta));
+                }
+            }
+        }
         
         Integer participant = app.getParametro("participant").getInteger();
-        participant = participant == 0?null:participant;
+        participant = participant == 0?null:participant;       
         
         Calendar dataInicial = app.getParametro("dataInicial").getCalendar("ymd");
         Calendar dataFinal = app.getParametro("dataFinal").getCalendar("ymd");
@@ -45,11 +58,18 @@ public class Conciliate {
         name = "Conciliação Automática -- #" + codEmpresa + " conta " + contaCTB + " participante " + participant  + " " + dataInicialStr + " -> " + dataFinalStr;
         app.setNome(name);
 
-        app.executar(
-                //new File("").getAbsolutePath() + "\n" +
-                //Env.getEnvs().toString()
-                principal(codEmpresa, contaCTB, participant, dataInicial, dataFinal, zerarConciliacao)
-        );
+        //Se a Lista de contas estiver vazia e só tiver uma conta
+        if(accounts.isEmpty()){
+            //Executa uma conta
+            app.executar(
+                    principal(codEmpresa, contaCTB, participant, dataInicial, dataFinal, zerarConciliacao)
+            );
+        }else{
+            //Executa varias contas
+            app.executar(
+                    principal(codEmpresa, accounts, participant, dataInicial, dataFinal, zerarConciliacao)
+            );
+        }
 
         System.exit(0);
     }
