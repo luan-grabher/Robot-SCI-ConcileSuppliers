@@ -9,18 +9,21 @@ import java.io.File;
 import robot_conciliate.Control.Controller;
 import java.util.Calendar;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Conciliate {
 
     private static String name;
+    public static String path = "\\\\zac\\Robos\\Tarefas\\Todas Empresas\\";
 
     public static void main(String[] args) {        
         //Inicia robô
         AppRobo app = new AppRobo("Conciliação Automática");
         
-        //Define Env
-        Env.setPath("\\\\zac\\Robos\\Tarefas\\Todas Empresas\\");
+        //Define WorkPath
+        
+        Env.setPath(path);
 
         //Define os parâmetros
         app.definirParametros();
@@ -49,6 +52,14 @@ public class Conciliate {
         );
 
         System.exit(0);
+    }
+    public static String principal(Integer enterprise, List<Integer> accounts, Integer participant, Calendar dateStart, Calendar dateEnd, boolean remakeConciliate){
+        StringBuilder result = new StringBuilder();
+        for (Integer account : accounts) {
+            result.append("\n\n\nCONTA CONTÁBIL: ").append(account).append("\n");
+            result.append(principal(enterprise, account, participant, dateStart, dateEnd, remakeConciliate));
+        }
+        return result.toString();
     }
 
     public static String principal(Integer enterprise, Integer account, Integer participant, Calendar dateStart, Calendar dateEnd, boolean remakeConciliate) {
