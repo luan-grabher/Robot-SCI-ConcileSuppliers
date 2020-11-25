@@ -31,6 +31,9 @@ public class Conciliate {
         //Define variáveis
         Integer codEmpresa = app.getParametro("empresa").getInteger();
         Integer contaCTB = app.getParametro("contaCTB").getInteger();
+        Integer participant = app.getParametro("participant").getInteger();
+        participant = participant == 0?null:participant;
+                
         List<Integer> accounts =  new ArrayList<>();
         if(app.getParametro("contaCTB").getString().contains(";")){
             String[] contas = app.getParametro("contaCTB").getString().split(";");
@@ -43,10 +46,21 @@ public class Conciliate {
                     accounts.add(Integer.valueOf(conta));
                 }
             }
-        }
+        }       
         
-        Integer participant = app.getParametro("participant").getInteger();
-        participant = participant == 0?null:participant;       
+        List<Integer> participants =  new ArrayList<>();
+        if(participant != null && app.getParametro("participant").getString().contains(";")){
+            String[] participantes = app.getParametro("participant").getString().split(";");
+            
+            for (String participante : participantes) {
+                participante = participante.replaceAll("[^0-9]", ""); //Remove tudo que não for número
+                //Se a conta nao estiver em branco, contendo apenas numeros
+                if("".equals(participante)){
+                    //Adiciona na lista de contas
+                    participants.add(Integer.valueOf(participante));
+                }
+            }
+        }
         
         Calendar dataInicial = app.getParametro("dataInicial").getCalendar("ymd");
         Calendar dataFinal = app.getParametro("dataFinal").getCalendar("ymd");
@@ -60,10 +74,17 @@ public class Conciliate {
 
         //Se a Lista de contas estiver vazia e só tiver uma conta
         if(accounts.isEmpty()){
-            //Executa uma conta
-            app.executar(
-                    principal(codEmpresa, contaCTB, participant, dataInicial, dataFinal, zerarConciliacao)
-            );
+            if(participants.isEmpty()){
+                //Executa uma conta
+                app.executar(
+                        principal(codEmpresa, contaCTB, participant, dataInicial, dataFinal, zerarConciliacao)
+                );
+            }else{
+                //Executa uma conta e vários participantes
+                app.executar(
+                        principal(codEmpresa, contaCTB, participants, dataInicial, dataFinal, zerarConciliacao)
+                );
+            }
         }else{
             //Executa varias contas
             app.executar(
@@ -73,6 +94,27 @@ public class Conciliate {
 
         System.exit(0);
     }
+    
+    /**
+     *  VÁRIOS PARTICIPANTES
+     *  Método principal que gerencia a execução e o controle.
+     *  
+     */
+    public static String principal(Integer enterprise, Integer account, List<Integer> participants, Calendar dateStart, Calendar dateEnd, boolean remakeConciliate){
+        StringBuilder result = new StringBuilder();
+        for (Integer participant : participants) {
+            result.append("\n\n\nCONTA CONTÁBIL: ").append(account).append("\n");
+            result.append(principal(enterprise, account, participant, dateStart, dateEnd, remakeConciliate));
+        }
+        return result.toString();
+    }
+    
+    
+    /**
+     *  VÁRIAS CONTAS
+     *  Método principal que gerencia a execução e o controle.
+     *  
+     */
     public static String principal(Integer enterprise, List<Integer> accounts, Integer participant, Calendar dateStart, Calendar dateEnd, boolean remakeConciliate){
         StringBuilder result = new StringBuilder();
         for (Integer account : accounts) {
@@ -82,6 +124,11 @@ public class Conciliate {
         return result.toString();
     }
 
+    /**
+     *  SOMENTE UM PARTICIPANTE E UMA CONTA
+     *  Método principal que gerencia a execução e o controle.
+     *  
+     */
     public static String principal(Integer enterprise, Integer account, Integer participant, Calendar dateStart, Calendar dateEnd, boolean remakeConciliate) {
        
         //Se empresa for maior que zero
