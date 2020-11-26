@@ -99,7 +99,7 @@ public class ConciliateContabilityEntries {
                 Integer key = entry.getKey();
                 ContabilityEntry ce = entry.getValue();
                 participants.put(ce.getParticipantCredit(), ce.getParticipantCredit());
-                participants.put(ce.getAccountDebit(), ce.getParticipantDebit());
+                participants.put(ce.getParticipantDebit(), ce.getParticipantDebit());
                 documents.put(ce.getDocument(), ce.getDocument());
             }
         }
