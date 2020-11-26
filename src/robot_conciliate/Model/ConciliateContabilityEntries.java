@@ -19,7 +19,7 @@ import lctocontabil.Model.ContabilityEntries_Model;
 public class ConciliateContabilityEntries {
 
     private final Integer enterprise;
-    private final Integer accountFilter;
+    private final Integer account;
     private final Integer participantFilter;
     private final Calendar dateStart;
     private final Calendar dateEnd;
@@ -29,7 +29,8 @@ public class ConciliateContabilityEntries {
     private final Map<String, String> documents = new HashMap<>();
 
     private Predicate<Entry<Integer, ContabilityEntry>> defaultPredicate;
-    private Predicate<Entry<Integer, ContabilityEntry>> accountPredicate;
+    private Predicate<Entry<Integer, ContabilityEntry>> accountPredicateCredit;
+    private Predicate<Entry<Integer, ContabilityEntry>> accountPredicateDebit;
     private Predicate<Entry<Integer, ContabilityEntry>> enterprisePredicate;
     private Predicate<Entry<Integer, ContabilityEntry>> conciledPredicate;
 
@@ -43,7 +44,7 @@ public class ConciliateContabilityEntries {
     public ConciliateContabilityEntries(Map<Integer, ContabilityEntry> entries, Integer enterprise, Integer account, Integer participant, Calendar dateStart, Calendar dateEnd) {
         this.entries = entries;
         this.enterprise = enterprise;
-        this.accountFilter = account;
+        this.account = account;
         this.participantFilter = participant;
         this.dateStart = dateStart;
         this.dateEnd = dateEnd;
@@ -74,7 +75,8 @@ public class ConciliateContabilityEntries {
      */
     public void setDefaultPredicates() {
         //Não precisa utilizar o account predicate porque na teoria ja deveria ter somente os lançamentos da conta
-        accountPredicate = e -> e.getValue().getAccountCredit().equals(accountFilter) && e.getValue().getAccountDebit().equals(accountFilter);
+        accountPredicateCredit = e -> e.getValue().getAccountCredit().equals(account);
+        accountPredicateDebit =  e -> e.getValue().getAccountDebit().equals(account);
         //Não precisa usare o enterprise pq na teoria todos lançamentos são dessa empresa
         enterprisePredicate = e -> e.getValue().getEnterprise().equals(enterprise);
 
@@ -113,8 +115,8 @@ public class ConciliateContabilityEntries {
     private void showConciledInfos(Integer participant){
         NumberFormat nf = NumberFormat.getCurrencyInstance();
         
-        Predicate<Entry<Integer, ContabilityEntry>> creditPredicate = conciledPredicate.and(e -> e.getValue().getParticipantCredit().equals(participant));
-        Predicate<Entry<Integer, ContabilityEntry>> debitPredicate = conciledPredicate.and(e -> e.getValue().getParticipantDebit().equals(participant));
+        Predicate<Entry<Integer, ContabilityEntry>> creditPredicate = accountPredicateCredit.and(conciledPredicate.and(e -> e.getValue().getParticipantCredit().equals(participant)));
+        Predicate<Entry<Integer, ContabilityEntry>> debitPredicate = accountPredicateDebit.and(conciledPredicate.and(e -> e.getValue().getParticipantDebit().equals(participant)));
         
         BigDecimal credit = entries.entrySet().stream().filter(creditPredicate).map(e -> e.getValue().getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal debit = entries.entrySet().stream().filter(debitPredicate).map(e -> e.getValue().getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -170,8 +172,8 @@ public class ConciliateContabilityEntries {
             String document = entry.getKey();
             Predicate<Entry<Integer, ContabilityEntry>> documentPredicate = defaultPredicate.and(e -> e.getValue().getDocument().equals(document));
 
-            Predicate<Entry<Integer, ContabilityEntry>> creditPredicate = documentPredicate.and(e -> e.getValue().getParticipantCredit().equals(participant));
-            Predicate<Entry<Integer, ContabilityEntry>> debitPredicate = documentPredicate.and(e -> e.getValue().getParticipantDebit().equals(participant));
+            Predicate<Entry<Integer, ContabilityEntry>> creditPredicate = conciledPredicate.negate().and(accountPredicateCredit.and(documentPredicate.and(e -> e.getValue().getParticipantCredit().equals(participant))));
+            Predicate<Entry<Integer, ContabilityEntry>> debitPredicate = conciledPredicate.negate().and(accountPredicateDebit.and(documentPredicate.and(e -> e.getValue().getParticipantDebit().equals(participant))));
 
             conciliateByPredicates(creditPredicate, debitPredicate);
         }
@@ -222,7 +224,7 @@ public class ConciliateContabilityEntries {
             date.add(Calendar.DATE, -1);
 
             //Pega saldo de credito e débito na data
-            Map<String, BigDecimal> balances = ContabilityEntries_Model.selectAccountBalance(enterprise, accountFilter, participantCode, date);
+            Map<String, BigDecimal> balances = ContabilityEntries_Model.selectAccountBalance(enterprise, account, participantCode, date);
             //Se o credito != 0 e o debito for igual ao credito
             if (balances.get("credit").compareTo(BigDecimal.ZERO) != 0 && balances.get("credit").compareTo(balances.get("debit")) == 0) {
 
@@ -230,7 +232,7 @@ public class ConciliateContabilityEntries {
                 Map<Integer, ContabilityEntry> toConciliate = entries.entrySet().stream().filter(
                         c
                         //Conta em debito ou credito
-                        -> (c.getValue().getAccountCredit().equals(accountFilter) || c.getValue().getAccountDebit().equals(accountFilter))
+                        -> (c.getValue().getAccountCredit().equals(account) || c.getValue().getAccountDebit().equals(account))
                         //Data menor ou igual a data atual
                         && c.getValue().getDate().compareTo(date) <= 0
                         //participante nulo ou igual
@@ -241,7 +243,7 @@ public class ConciliateContabilityEntries {
                 ContabilityEntries_Model.defineConciliatedsTo(toConciliate, Boolean.TRUE);
 
                 //Concilia no banco também pois depois pode ter erro, pois só conciliou os lançamentos que estou usando
-                String listToConciliate = ContabilityEntries_Model.getEntriesListBeforeDate(date, enterprise, accountFilter, participantCode);
+                String listToConciliate = ContabilityEntries_Model.getEntriesListBeforeDate(date, enterprise, account, participantCode);
                 ContabilityEntries_Model.conciliateKeysOnDatabase(enterprise, listToConciliate, Boolean.TRUE);
             }
         }
@@ -254,8 +256,8 @@ public class ConciliateContabilityEntries {
      */
     private void conciliateByValues(Integer participant) {
         //Cria predicatos
-        Predicate<Entry<Integer, ContabilityEntry>> participantCreditPredicate = e -> e.getValue().getParticipantCredit().equals(participant);
-        Predicate<Entry<Integer, ContabilityEntry>> participantDebitPredicate = e -> e.getValue().getParticipantDebit().equals(participant);
+        Predicate<Entry<Integer, ContabilityEntry>> participantCreditPredicate =conciledPredicate.negate().and(accountPredicateCredit.and(e -> e.getValue().getParticipantCredit().equals(participant)));
+        Predicate<Entry<Integer, ContabilityEntry>> participantDebitPredicate = conciledPredicate.negate().and(accountPredicateDebit.and(e -> e.getValue().getParticipantDebit().equals(participant)));
 
         //Loading
         Loading loading = new Loading("Conciliando por valor Participante " + participant, 0, entries.size());
@@ -274,7 +276,7 @@ public class ConciliateContabilityEntries {
             if (!ce.isConciliated()) {
 
                 //Define onde a conta está, se em crédito ou em débito 
-                Integer participantType = ce.getParticipantCredit().equals(participant) ? PARTICIPANT_TYPE_CREDIT : PARTICIPANT_TYPE_DEBIT;
+                Integer participantType = ce.getAccountCredit().equals(account) ? PARTICIPANT_TYPE_CREDIT : PARTICIPANT_TYPE_DEBIT;
 
                 //Define os totais de credito e débito
                 Map<Integer, BigDecimal> credits = new LinkedHashMap<>();
@@ -439,8 +441,8 @@ public class ConciliateContabilityEntries {
      */
     private void conciliateByAfterValues(Integer participant) {
         //Cria predicatos
-        Predicate<Entry<Integer, ContabilityEntry>> participantCreditPredicate = e -> e.getValue().getParticipantCredit().equals(participant);
-        Predicate<Entry<Integer, ContabilityEntry>> participantDebitPredicate = e -> e.getValue().getParticipantDebit().equals(participant);
+        Predicate<Entry<Integer, ContabilityEntry>> participantCreditPredicate = conciledPredicate.negate().and(accountPredicateCredit.and(e -> e.getValue().getParticipantCredit().equals(participant)));
+        Predicate<Entry<Integer, ContabilityEntry>> participantDebitPredicate = conciledPredicate.negate().and(accountPredicateDebit.and(e -> e.getValue().getParticipantDebit().equals(participant)));
 
         //Percorre todos lançamentos
         for (Entry<Integer, ContabilityEntry> entry : entries.entrySet()) {
@@ -450,7 +452,7 @@ public class ConciliateContabilityEntries {
             //Se não estiver conciliado
             if (!ce.isConciliated()) {
                 //Define onde a conta está, se em crédito ou em débito 
-                Integer participantType = ce.getParticipantCredit().equals(participant) ? PARTICIPANT_TYPE_CREDIT : PARTICIPANT_TYPE_DEBIT;
+                Integer participantType = ce.getAccountCredit().equals(account) ? PARTICIPANT_TYPE_CREDIT : PARTICIPANT_TYPE_DEBIT;
 
                 Predicate<Entry<Integer, ContabilityEntry>> participantPredicate;
                 Predicate<Entry<Integer, ContabilityEntry>> reverseParticipantPredicate;
