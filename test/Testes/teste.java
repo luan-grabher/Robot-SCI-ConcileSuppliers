@@ -2,14 +2,24 @@ package Testes;
 
 import java.io.File;
 import java.util.Calendar;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import robot_conciliate.Conciliate;
 
 public class teste {
 
     public static void main(String[] args) {
-        System.out.println(new File("").getAbsolutePath());
-        System.setProperty("user.dir", "\\\\zac\\Robos\\Tarefas\\Todas Empresas");
-        System.out.println(new File("").getAbsolutePath());
+        String regex = "Ref\\. +[0-1][0-9]\\/20[0-9]{2}";
+        String str = "INSS Ref.  09/2020";
+        String numbersOnly = "";
+        
+        Pattern p = Pattern.compile(regex);
+        Matcher m = p.matcher(str);
+        if(m.find()){
+            numbersOnly = m.group(0).replaceAll("[^0-9]", "");
+        }
+        
+        System.out.println(numbersOnly);
     }
 
     public static void test() {

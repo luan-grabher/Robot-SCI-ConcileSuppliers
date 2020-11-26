@@ -3,6 +3,8 @@ package robot_conciliate.Model;
 import SimpleView.Loading;
 import java.util.Calendar;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lctocontabil.Entity.ContabilityEntry;
 
 public class ChangeEntries {
@@ -32,28 +34,53 @@ public class ChangeEntries {
 
             //Se não possuir documento
             if ("".equals(contabilityEntry.getDocument())) {
-                //Arruma complemento
-                contabilityEntry.setComplement(
-                        fixComplement(
-                                contabilityEntry.getComplement(),
-                                contabilityEntry.getDate().get(Calendar.YEAR)
-                        )
-                );
-                contabilityEntry.setComplement(
-                        fixComplement(
-                                contabilityEntry.getComplement(),
-                                contabilityEntry.getDate().get(Calendar.YEAR) - 1
-                        )
-                );
+                String newDocument;
 
-                //Define o documento como o primeiro número que encontrar no complemento
-                contabilityEntry.setDocument(getFirstNumber(contabilityEntry.getComplement()));
+                String reference = getRefNumber(contabilityEntry.getComplement());
+                if ("".equals(reference)) {
+                    //Cria um complemento para extrair o documento
+                    String complementWithoutYears;
+                    complementWithoutYears = getDocumentFromComplement(
+                            contabilityEntry.getComplement(),
+                            contabilityEntry.getDate().get(Calendar.YEAR)
+                    );
+                    complementWithoutYears = getDocumentFromComplement(
+                            complementWithoutYears,
+                            contabilityEntry.getDate().get(Calendar.YEAR) - 1
+                    );
+                    newDocument = getFirstNumber(complementWithoutYears);
+                }else{
+                    newDocument = reference;
+                }
+
+                //Define o documento como o primeiro número que encontrar no complemento                
+                contabilityEntry.setDocument(newDocument);
             }
         }
 
         loading.dispose();
 
         return entries;
+    }
+
+    /**
+     * Se tiver regex "Ref. MM/YYYY" irá retornar uma String no formato MM/YYYY,
+     * se não tiver, retorna em branco
+     *
+     * @param str String do complemento
+     * @return retornar uma String no formato MM/YYYY, se não tiver, retorna em
+     * branco
+     */
+    public static String getRefNumber(String str) {
+        String regex = "Ref\\. +[0-1][0-9]\\/20[0-9]{2}";
+
+        Pattern p = Pattern.compile(regex);
+        Matcher m = p.matcher(str);
+        if (m.find()) {
+            return m.group(0).replaceAll("[^0-9]", "");
+        }
+
+        return "";
     }
 
     /**
@@ -83,7 +110,7 @@ public class ChangeEntries {
      * @return A própria String modificada, não precisa implementar ela pois a
      * referência recebida da variavel já é modificada
      */
-    public static String fixComplement(String str, Integer year) {
+    public static String getDocumentFromComplement(String str, Integer year) {
         str = str.replaceAll(year + "000", "");
         str = str.replaceAll(year + "/", "");
         str = str.replaceAll("/" + year, "");
