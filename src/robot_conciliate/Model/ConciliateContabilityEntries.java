@@ -36,7 +36,7 @@ public class ConciliateContabilityEntries {
 
     private final static Integer PARTICIPANT_TYPE_CREDIT = 0;
     private final static Integer PARTICIPANT_TYPE_DEBIT = 1;
-    
+
     private final StringBuilder infos = new StringBuilder("Conferências:\n");
     private long entriesConciledBefore = 0;
     private long entriesConciledAfter = 0;
@@ -52,23 +52,21 @@ public class ConciliateContabilityEntries {
 
     /**
      * Retorna String com inforamções sobre conciliados
-     * 
+     *
      * @return Retorna String com inforamções sobre conciliados
      */
     public String getInfos() {
         entriesConciledAfter = this.entries.entrySet().stream().filter(conciledPredicate).count();
-        
-        
-        BigDecimal beforePercent = new BigDecimal(entriesConciledBefore*100/entries.size());
-        BigDecimal afterPercent = new BigDecimal(entriesConciledAfter*100/entries.size());
-        
+
+        BigDecimal beforePercent = new BigDecimal(entriesConciledBefore * 100 / entries.size());
+        BigDecimal afterPercent = new BigDecimal(entriesConciledAfter * 100 / entries.size());
+
         infos.append("TOTAL DE CONCILIADOS dos ").append(entries.size()).append(" lançamentos:");
         infos.append("\nAntes: ").append(entriesConciledBefore).append(" (").append(beforePercent.toString()).append("%)");
         infos.append("\nDepois: ").append(entriesConciledAfter).append(" (").append(afterPercent.toString()).append("%)");
-        
+
         return infos.toString();
-    }    
-    
+    }
 
     /**
      * Define predicados padrões
@@ -76,13 +74,13 @@ public class ConciliateContabilityEntries {
     public void setDefaultPredicates() {
         //Não precisa utilizar o account predicate porque na teoria ja deveria ter somente os lançamentos da conta
         accountPredicateCredit = e -> e.getValue().getAccountCredit().equals(account);
-        accountPredicateDebit =  e -> e.getValue().getAccountDebit().equals(account);
+        accountPredicateDebit = e -> e.getValue().getAccountDebit().equals(account);
         //Não precisa usare o enterprise pq na teoria todos lançamentos são dessa empresa
         enterprisePredicate = e -> e.getValue().getEnterprise().equals(enterprise);
 
         conciledPredicate = e -> e.getValue().isConciliated();
         defaultPredicate = conciledPredicate.negate();
-        
+
         entriesConciledBefore = this.entries.entrySet().stream().filter(conciledPredicate).count();
     }
 
@@ -106,21 +104,21 @@ public class ConciliateContabilityEntries {
             }
         }
     }
-    
+
     /**
      * Mostra valores atuais de conciliados do participante com o Metodo Simple
-     * 
+     *
      * @param participant Codigo participante
      */
-    private void showConciledInfos(Integer participant){
+    private void showConciledInfos(Integer participant) {
         NumberFormat nf = NumberFormat.getCurrencyInstance();
-        
+
         Predicate<Entry<Integer, ContabilityEntry>> creditPredicate = accountPredicateCredit.and(conciledPredicate.and(e -> e.getValue().getParticipantCredit().equals(participant)));
         Predicate<Entry<Integer, ContabilityEntry>> debitPredicate = accountPredicateDebit.and(conciledPredicate.and(e -> e.getValue().getParticipantDebit().equals(participant)));
-        
+
         BigDecimal credit = entries.entrySet().stream().filter(creditPredicate).map(e -> e.getValue().getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal debit = entries.entrySet().stream().filter(debitPredicate).map(e -> e.getValue().getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
-                
+
         infos.append("\n    Débito: ").append(nf.format(debit));
         infos.append("\n    Crédito: ").append(nf.format(credit));
     }
@@ -131,20 +129,20 @@ public class ConciliateContabilityEntries {
     public void conciliateParticipants() {
         Loading loading = new Loading("Conciliando participantes", 0, participants.size());
         int i = 0;
-        
-        for (Map.Entry<Integer, Integer> part : participants.entrySet()) {            
+
+        for (Map.Entry<Integer, Integer> part : participants.entrySet()) {
             //Pega numero participante
             Integer participant = part.getKey();
-            
+
             //Atualiza barra
             i++;
             loading.updateBar(i + " de " + participants.size() + "(" + participant + ")", i);
-            
+
             //Mostra informações
             infos.append("\nPARTICIPANTE ").append(participant).append(":");
             infos.append("\n    Conciliados ANTES da conciliação:");
             showConciledInfos(participant);
-            
+
             //Concilia por saldo
             conciliateByBalance(participant);
             conciliateByDocuments(participant);
@@ -154,10 +152,10 @@ public class ConciliateContabilityEntries {
             //mostra informações
             infos.append("\n    Conciliados APÓS conciliação:");
             showConciledInfos(participant);
-            
+
             infos.append("\n");
         }
-        
+
         loading.dispose();
     }
 
@@ -256,18 +254,18 @@ public class ConciliateContabilityEntries {
      */
     private void conciliateByValues(Integer participant) {
         //Cria predicatos
-        Predicate<Entry<Integer, ContabilityEntry>> participantCreditPredicate =conciledPredicate.negate().and(accountPredicateCredit.and(e -> e.getValue().getParticipantCredit().equals(participant)));
+        Predicate<Entry<Integer, ContabilityEntry>> participantCreditPredicate = conciledPredicate.negate().and(accountPredicateCredit.and(e -> e.getValue().getParticipantCredit().equals(participant)));
         Predicate<Entry<Integer, ContabilityEntry>> participantDebitPredicate = conciledPredicate.negate().and(accountPredicateDebit.and(e -> e.getValue().getParticipantDebit().equals(participant)));
 
         //Loading
         Loading loading = new Loading("Conciliando por valor Participante " + participant, 0, entries.size());
         int i = 0;
-        
+
         //Percorre todos lançamentos
         for (Entry<Integer, ContabilityEntry> entry : entries.entrySet()) {
             Integer key = entry.getKey();
             ContabilityEntry ce = entry.getValue();
-            
+
             //Loading
             i++;
             loading.updateBar(i + " de " + entries.size(), i);
@@ -281,39 +279,40 @@ public class ConciliateContabilityEntries {
                 //Define os totais de credito e débito
                 Map<Integer, BigDecimal> credits = new LinkedHashMap<>();
                 Map<Integer, BigDecimal> debits = new LinkedHashMap<>();
+                BigDecimal totalCredits = new BigDecimal("0.00");
+                BigDecimal totalDebits = new BigDecimal("0.00");
 
                 //Coloca o valor do lançamento atual verificado na soma                
                 if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {
                     credits.put(key, ce.getValue());
+                    totalCredits = totalCredits.add(ce.getValue());
                 } else if (participantType.equals(PARTICIPANT_TYPE_DEBIT)) {
                     debits.put(key, ce.getValue());
+                    totalDebits = totalDebits.add(ce.getValue());
                 }
 
                 //Enquanto não tiver procurado mais do que o proprio numero de lançamentos e o crédito for diferente do débito
                 int searches = 0;
-                while ( searches <= entries.size() &&
-                        credits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add).compareTo(
-                        debits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add)
-                ) != 0) {
+                while (searches <= entries.size() && totalCredits.compareTo(totalDebits) != 0) {
                     searches++;
-                    
+
                     //Soma lista de creditos e debitos atuais
-                    BigDecimal totalCredit = credits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
-                    BigDecimal totalDebit = debits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    //BigDecimal totalCredit = credits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    //BigDecimal totalDebit = debits.entrySet().stream().map(t -> t.getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
                     BigDecimal diference;
 
                     //Se o participante estiver no credito, procura no debito
                     if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {
                         //Procura o valor e adiciona no mapa se ecnontrar
-                        diference = totalCredit.add(totalDebit.negate());
-                        if (findEntryWithDiference(debits, diference, participantDebitPredicate)) {
+                        diference = totalCredits.add(totalDebits.negate());
+                        if (findEntryWithDiference(debits, totalDebits, diference, participantDebitPredicate)) {
                             //Adicionou o debito, entao pode vazar
                             break;
                         }
                     } else {
                         //Procura o valor e adiciona no mapa se ecnontrar
-                        diference = totalDebit.add(totalCredit.negate());
-                        if (findEntryWithDiference(credits, diference, participantCreditPredicate)) {
+                        diference = totalDebits.add(totalCredits.negate());
+                        if (findEntryWithDiference(credits, totalCredits, diference, participantCreditPredicate)) {
                             //Adicionou o credito, entao pode vazar
                             break;
                         }
@@ -321,7 +320,7 @@ public class ConciliateContabilityEntries {
 
                     //Procura valor multiplo
                     Optional<Entry<Integer, ContabilityEntry>> multipleEntry;
-                    
+
                     if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {
                         multipleEntry = entries.entrySet().stream().filter(
                                 conciledPredicate.negate()
@@ -330,7 +329,7 @@ public class ConciliateContabilityEntries {
                                         .and(e -> e.getValue().getValue().compareTo(diference) == -1)//Menor que a diferença
                                         .and(e -> ce.getValue().remainder(e.getValue().getValue()).compareTo(BigDecimal.ZERO) == 0)//multiplo do valor original                            
                         ).findFirst();
-                    }else{
+                    } else {
                         multipleEntry = entries.entrySet().stream().filter(
                                 conciledPredicate.negate()
                                         .and(participantCreditPredicate)
@@ -342,10 +341,13 @@ public class ConciliateContabilityEntries {
 
                     //Se existir o múltiplo, adiciona na lista de reversa
                     if (multipleEntry.isPresent()) {
+                        ContabilityEntry me = multipleEntry.get().getValue();
                         if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {
-                            debits.put(multipleEntry.get().getKey(), multipleEntry.get().getValue().getValue());
+                            debits.put(me.getKey(), me.getValue());
+                            totalDebits = totalDebits.add(me.getValue());
                         } else {
-                            credits.put(multipleEntry.get().getKey(), multipleEntry.get().getValue().getValue());
+                            credits.put(me.getKey(), me.getValue());
+                            totalCredits = totalCredits.add(me.getValue());
                         }
                     }
                 }
@@ -364,7 +366,7 @@ public class ConciliateContabilityEntries {
                 }
             }
         }
-        
+
         //Acaba com a barra
         loading.dispose();
     }
@@ -374,7 +376,8 @@ public class ConciliateContabilityEntries {
      * adiciona no mapa informado
      *
      * @param mapValues mapa com valores que serão implementados caso ache
-     * @param total Total do valor maior
+     * @param total Total do mapa
+     * @param diference Total do valor maior
      * @param totalReverse total do valor menor(reverso, valor procurado)
      * @param participantReversePredicate Predicato para filtrar o participante
      * reverso
@@ -382,12 +385,14 @@ public class ConciliateContabilityEntries {
      * @return Retorna TRUE caso encontre e implemente no mapa
      * @return Retorna FALSE caso não encontre e não implementa no mapa
      */
-    private boolean findEntryWithDiference(Map<Integer, BigDecimal> mapValues, BigDecimal diference, Predicate<Entry<Integer, ContabilityEntry>> participantReversePredicate) {
+    private boolean findEntryWithDiference(Map<Integer, BigDecimal> mapValues,BigDecimal total, BigDecimal diference, Predicate<Entry<Integer, ContabilityEntry>> participantReversePredicate) {
         //Procura lançamento com valor igual
         Optional<Entry<Integer, ContabilityEntry>> entryWithEqualValue = getFirstEntryWithValue(participantReversePredicate, diference, mapValues);
         //Se encontrar adiciona na lista de debitos
         if (entryWithEqualValue.isPresent()) {
-            mapValues.put(entryWithEqualValue.get().getKey(), entryWithEqualValue.get().getValue().getValue());
+            ContabilityEntry entry = entryWithEqualValue.get().getValue();
+            mapValues.put(entry.getKey(), entry.getValue());
+            total = total.add(entry.getValue());
             return true;
         } else {
             return false;
@@ -436,7 +441,7 @@ public class ConciliateContabilityEntries {
     /**
      * Concilia valores do participante conforme proximos valores contrários.
      * Para cada lançamento tenta fechar com os proximos lançamentos contrários.
-     * 
+     *
      * @param participant Codigo de participante
      */
     private void conciliateByAfterValues(Integer participant) {
@@ -444,10 +449,17 @@ public class ConciliateContabilityEntries {
         Predicate<Entry<Integer, ContabilityEntry>> participantCreditPredicate = conciledPredicate.negate().and(accountPredicateCredit.and(e -> e.getValue().getParticipantCredit().equals(participant)));
         Predicate<Entry<Integer, ContabilityEntry>> participantDebitPredicate = conciledPredicate.negate().and(accountPredicateDebit.and(e -> e.getValue().getParticipantDebit().equals(participant)));
 
+        //Loading
+        Loading loading = new Loading("Conciliando por valor Participante " + participant, 0, entries.size());
+        int i = 0;
+        
         //Percorre todos lançamentos
         for (Entry<Integer, ContabilityEntry> entry : entries.entrySet()) {
             Integer key = entry.getKey();
             ContabilityEntry ce = entry.getValue();
+            
+            i++;
+            loading.updateBar(i + " de " + entries.size(), i);
 
             //Se não estiver conciliado
             if (!ce.isConciliated()) {
@@ -518,5 +530,7 @@ public class ConciliateContabilityEntries {
 
             }
         }
+        
+        loading.dispose();
     }
 }
