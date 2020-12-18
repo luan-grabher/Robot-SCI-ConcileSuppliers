@@ -1,6 +1,5 @@
 package robot_conciliate.Control;
 
-import Auxiliar.Valor;
 import Dates.Dates;
 import Entity.Executavel;
 import Entity.Warning;
