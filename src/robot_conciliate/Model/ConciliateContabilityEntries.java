@@ -32,7 +32,6 @@ public class ConciliateContabilityEntries {
     private Predicate<Entry<Integer, ContabilityEntry>> defaultPredicate;
     private Predicate<Entry<Integer, ContabilityEntry>> accountPredicateCredit;
     private Predicate<Entry<Integer, ContabilityEntry>> accountPredicateDebit;
-    private Predicate<Entry<Integer, ContabilityEntry>> enterprisePredicate;
     private Predicate<Entry<Integer, ContabilityEntry>> conciledPredicate;
 
     private final static Integer PARTICIPANT_TYPE_CREDIT = 0;
@@ -119,8 +118,6 @@ public class ConciliateContabilityEntries {
         //Não precisa utilizar o account predicate porque na teoria ja deveria ter somente os lançamentos da conta
         accountPredicateCredit = e -> e.getValue().getAccountCredit().equals(account);
         accountPredicateDebit = e -> e.getValue().getAccountDebit().equals(account);
-        //Não precisa usare o enterprise pq na teoria todos lançamentos são dessa empresa
-        enterprisePredicate = e -> e.getValue().getEnterprise().equals(enterprise);
 
         conciledPredicate = e -> e.getValue().isConciliated();
         defaultPredicate = conciledPredicate.negate();
@@ -307,10 +304,6 @@ public class ConciliateContabilityEntries {
      * @param participant Codigo do participante
      */
     private void conciliateByValues(Integer participant) {
-        //Cria predicatos
-        Predicate<Entry<Integer, ContabilityEntry>> participantCreditPredicate = conciledPredicate.negate().and(accountPredicateCredit.and(e -> e.getValue().getParticipantCredit().equals(participant)));
-        Predicate<Entry<Integer, ContabilityEntry>> participantDebitPredicate = conciledPredicate.negate().and(accountPredicateDebit.and(e -> e.getValue().getParticipantDebit().equals(participant)));
-
         //Loading
         Loading loading = new Loading("Conciliando por valor Participante " + participant, 0, notConcileds.size());
         int i = 0;
@@ -502,27 +495,6 @@ public class ConciliateContabilityEntries {
     }
 
     /**
-     * Retorna predicato para filtrar o valor bigdecimal
-     *
-     * @param value Valor BigDecimal que deve filtrar
-     * @return Retorna o predicato para filtrar valor igual ao informado
-     */
-    private Predicate<Entry<Integer, ContabilityEntry>> predicateValueEqual(BigDecimal value) {
-        return e -> e.getValue().getValue().compareTo(value) == 0;
-    }
-
-    /**
-     * Retorna predicato para encontrar os lançamentos que nao estao no mapa
-     *
-     * @param map Mapa com valores bigdecimal e chaves
-     * @return Retorna o predicato para filtrar lançamentos que NÃO estejam
-     * naquele mapa
-     */
-    private Predicate<Entry<Integer, ContabilityEntry>> predicateNotInMap(Map<Integer, BigDecimal> map) {
-        return e -> !map.containsKey(e.getKey());
-    }
-
-    /**
      * Concilia valores do participante conforme proximos valores contrários.
      * Para cada lançamento tenta fechar com os proximos lançamentos contrários.
      *
@@ -549,19 +521,13 @@ public class ConciliateContabilityEntries {
             if (!ce.isConciliated()) {
                 //Define onde a conta está, se em crédito ou em débito 
                 Integer participantType = ce.getAccountCredit().equals(account) ? PARTICIPANT_TYPE_CREDIT : PARTICIPANT_TYPE_DEBIT;
-
-                Predicate<Entry<Integer, ContabilityEntry>> participantPredicate;
-                Predicate<Entry<Integer, ContabilityEntry>> reverseParticipantPredicate;
-
-                //Define os totais de credito e débito
-                Map<Integer, BigDecimal> reverseValues = new LinkedHashMap<>();
+                
+                Predicate<Entry<Integer, ContabilityEntry>> reverseParticipantPredicate;                
 
                 //Define predicatos dos participantes                
                 if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {
-                    participantPredicate = participantCreditPredicate;
                     reverseParticipantPredicate = participantDebitPredicate;
                 } else {
-                    participantPredicate = participantDebitPredicate;
                     reverseParticipantPredicate = participantCreditPredicate;
                 }
 
