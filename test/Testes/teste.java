@@ -14,7 +14,7 @@ import robot_conciliate.Conciliate;
 public class teste {
 
     public static void main(String[] args) {
-        testCalendardif();
+        test();
     }
     
     public static void testCalendardif(){

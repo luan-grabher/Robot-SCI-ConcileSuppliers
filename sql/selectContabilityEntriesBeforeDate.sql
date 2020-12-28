@@ -5,5 +5,5 @@ WHERE
 BDCODEMP = :enterprise
 AND BDDATA < ':date'
 AND (BDDEBITO = :account OR BDCREDITO = :account)
-AND (:conciled is NULL or (:conciled is not NULL AND(BDCONCC = :conciled or BDCONCD = :conciled)))
+AND CAST(BDCONCC AS VARCHAR(10)) :conciled 'TRUE' AND CAST(BDCONCD AS VARCHAR(10)) :conciled 'TRUE'
 AND (:participant is NULL OR (:participant is not NULL AND (BDCODTERCEIROC = :participant OR BDCODTERCEIROD = :participant)))
