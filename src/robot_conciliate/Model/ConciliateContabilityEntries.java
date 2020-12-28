@@ -3,12 +3,13 @@ package robot_conciliate.Model;
 import SimpleView.Loading;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Predicate;
@@ -88,12 +89,21 @@ public class ConciliateContabilityEntries {
      * Remove dos não conciliados dos conciliados
      */
     public void refreshNotConcileds() {
+        List<Integer> toRemove = new ArrayList<>();
+        
         for (Entry<Integer, ContabilityEntry> mapEntry : notConcileds.entrySet()) {
             ContabilityEntry entry = mapEntry.getValue();
 
+            //Se estiver conciliado
             if (entry.isConciliated()) {
-                notConcileds.remove(entry.getKey());
+                //Adiciona na lista para remover
+                toRemove.add(entry.getKey());                
             }
+        }
+        
+        //remove entradas não conciliadas
+        for (Integer removeId : toRemove) {
+            notConcileds.remove(removeId);
         }
     }
 

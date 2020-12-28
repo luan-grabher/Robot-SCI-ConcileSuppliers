@@ -8,7 +8,7 @@ import robot_conciliate.Conciliate;
 public class teste {
 
     public static void main(String[] args) {
-        mapTest();
+        test();
     }
 
     public static void mapTest(){
