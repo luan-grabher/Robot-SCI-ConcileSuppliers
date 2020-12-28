@@ -1,5 +1,6 @@
 package robot_conciliate.Model;
 
+import Dates.Dates;
 import SimpleView.Loading;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -90,17 +91,17 @@ public class ConciliateContabilityEntries {
      */
     public void refreshNotConcileds() {
         List<Integer> toRemove = new ArrayList<>();
-        
+
         for (Entry<Integer, ContabilityEntry> mapEntry : notConcileds.entrySet()) {
             ContabilityEntry entry = mapEntry.getValue();
 
             //Se estiver conciliado
             if (entry.isConciliated()) {
                 //Adiciona na lista para remover
-                toRemove.add(entry.getKey());                
+                toRemove.add(entry.getKey());
             }
         }
-        
+
         //remove entradas não conciliadas
         for (Integer removeId : toRemove) {
             notConcileds.remove(removeId);
@@ -274,42 +275,81 @@ public class ConciliateContabilityEntries {
      * @param dateEnd Data que terminam as verificações
      */
     private void conciliateByBalance(Integer participantCode) {
-        //Inicia na data final e coloca mais um pois vai ir diminuindo e quero considerar a data final
-        Calendar date = Calendar.getInstance();
-        date.set(dateEnd.get(Calendar.YEAR), dateEnd.get(Calendar.MONTH), dateEnd.get(Calendar.DATE));
-        date.add(Calendar.DATE, 1);
+        Map<Long, Calendar> participantDates = getNotConciledsCalendarsMap(participantCode);
 
-        //Se a data atual for maior que a data inicial, segue
-        while (date.compareTo(dateStart) > 0) {
-            //Diminui um dia
-            date.add(Calendar.DATE, -1);
+        try {
+            participantDates.forEach((position, date) -> {
+                System.out.print("\r" + participantCode + ": " + Dates.getCalendarInThisStringFormat(date, "dd/MM/yyyy"));
 
-            //Pega saldo de credito e débito na data
-            Map<String, BigDecimal> balances = ContabilityEntries_Model.selectAccountBalance(enterprise, account, participantCode, date);
-            //Se o credito != 0 e o debito for igual ao credito
-            if (balances.get("credit").compareTo(BigDecimal.ZERO) != 0 && balances.get("credit").compareTo(balances.get("debit")) == 0) {
+                Long entriesBeforeDateNotConcileds = ContabilityEntries_Model.getEntriesCountBeforeDate(date, enterprise, account, Boolean.FALSE, participantCode);
 
-                //Pega Lançamentos da conta e dos participantes
-                Map<Integer, ContabilityEntry> toConciliate = entries.entrySet().stream().filter(
-                        c
-                        //Conta em debito ou credito
-                        -> (c.getValue().getAccountCredit().equals(account) || c.getValue().getAccountDebit().equals(account))
-                        //Data menor ou igual a data atual
-                        && c.getValue().getDate().compareTo(date) <= 0
-                        //participante nulo ou igual
-                        && (participantCode == null || (c.getValue().getParticipantCredit().equals(participantCode) || c.getValue().getParticipantDebit().equals(participantCode)))
-                ).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+                //Se tiver lançamentos nao conciliados antes daquela data no participante
+                if (entriesBeforeDateNotConcileds > 0) {
+                    //Pega saldo de credito e débito na data
+                    Map<String, BigDecimal> balances = ContabilityEntries_Model.selectAccountBalance(enterprise, account, participantCode, date);
+                    //Se o credito != 0 e o debito for igual ao credito
+                    if (balances.get("credit").compareTo(BigDecimal.ZERO) != 0
+                            && balances.get("credit").compareTo(balances.get("debit")) == 0) {
 
-                //Concilia lançamentos
-                ContabilityEntries_Model.defineConciliatedsTo(toConciliate, Boolean.TRUE);
+                        //Concilia lançamentos da lista que eu tenho não conciliados
+                        notConcileds.forEach((key, ce) -> {
 
-                //Concilia no banco também pois depois pode ter erro, pois só conciliou os lançamentos que estou usando
-                String listToConciliate = ContabilityEntries_Model.getEntriesListBeforeDate(date, enterprise, account, participantCode);
-                ContabilityEntries_Model.conciliateKeysOnDatabase(enterprise, listToConciliate, Boolean.TRUE);
-            }
+                            if ( //Conta em debito ou credito
+                                    (ce.getAccountCredit().equals(account) || ce.getAccountDebit().equals(account))
+                                    //Data menor ou igual a data atual
+                                    && ce.getDate().compareTo(date) <= 0
+                                    //participante nulo ou igual
+                                    && (participantCode == null || (ce.isParticipant(participantCode)))) {
+                                //concilia o lançamento
+                                ce.conciliate();
+
+                                //Sai do foreach
+                                throw new Error("Break");
+                            }
+                        });
+
+                        //Concilia no banco também pois depois pode ter erro, pois só conciliou os lançamentos que estou usando
+                        String listToConciliate = ContabilityEntries_Model.getEntriesListBeforeDate(date, enterprise, account, false, participantCode);
+                        ContabilityEntries_Model.conciliateKeysOnDatabase(enterprise, listToConciliate, Boolean.TRUE);
+                    }
+                } else {
+                    //Sai do foreach
+                    throw new Error("Break");
+                }
+            });
+        } catch (Error e) {
+            //Saiu do foreach
         }
 
+        //Quebra linha porque tava usando somente print
+        System.out.println();
+
         refreshNotConcileds();
+    }
+
+    /**
+     * Retorna um mapa com as datas dos lançamentos não conciliados
+     * @param participantCode Codigo do participante, deixe nulo para qualquer participante
+     */
+    private Map<Long, Calendar> getNotConciledsCalendarsMap(Integer participantCode) {
+        //Cria mapa que irá ordenar por data
+        Map<Long, Calendar> datesReversed = new TreeMap<>();
+
+        //Cria calendar na data de hoje
+        Calendar now = Calendar.getInstance();
+
+        //Percorre não conciliados para pegar as datas
+        notConcileds.forEach((key, entry) -> {
+            //Se o participante de credito ou debito for o participante
+            if (participantCode == null || entry.isParticipant(participantCode)) {
+                //Pega diferença em dias
+                Long diffDays = (now.getTimeInMillis() - entry.getDate().getTimeInMillis()) / (24 * 60 * 60 * 1000);
+
+                datesReversed.put(diffDays, entry.getDate());
+            }
+        });
+
+        return datesReversed;
     }
 
     /**
@@ -401,7 +441,7 @@ public class ConciliateContabilityEntries {
                             credits.put(multipleEntry.getKey(), multipleEntry);
                             totalCredits = totalCredits.add(multipleEntry.getValue());
                         }
-                    }else{
+                    } else {
                         //Se nao tiver mais multiplos, tem que parar de procurar
                         break;
                     }
@@ -535,8 +575,8 @@ public class ConciliateContabilityEntries {
             if (!ce.isConciliated()) {
                 //Define onde a conta está, se em crédito ou em débito 
                 Integer participantType = ce.getAccountCredit().equals(account) ? PARTICIPANT_TYPE_CREDIT : PARTICIPANT_TYPE_DEBIT;
-                
-                Predicate<Entry<Integer, ContabilityEntry>> reverseParticipantPredicate;                
+
+                Predicate<Entry<Integer, ContabilityEntry>> reverseParticipantPredicate;
 
                 //Define predicatos dos participantes                
                 if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {

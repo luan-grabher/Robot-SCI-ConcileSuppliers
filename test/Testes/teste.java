@@ -1,14 +1,39 @@
 package Testes;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import robot_conciliate.Conciliate;
 
 public class teste {
 
     public static void main(String[] args) {
-        test();
+        testCalendardif();
+    }
+    
+    public static void testCalendardif(){
+        Calendar startDate = Calendar.getInstance();
+        Calendar endDate = Calendar.getInstance();
+
+        startDate.set(2020, 11, 1);
+        endDate.set(2020, 10, 30);
+        
+        long days = (endDate.getTimeInMillis() - startDate.getTimeInMillis())/ (24 * 60 * 60 * 1000);
+        
+        System.out.println(days);
+    }
+    
+    public static void printTest(){
+        for (int i = 0; i < 100; i++) {
+            try {Thread.sleep(500);} catch (Exception e) {}
+            System.out.print("\bEHEHEHE " + i);
+        }
     }
 
     public static void mapTest(){
