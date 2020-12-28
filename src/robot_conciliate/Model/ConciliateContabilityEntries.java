@@ -198,12 +198,16 @@ public class ConciliateContabilityEntries {
             setNotConcileds();
 
             //Concilia por saldo
+            System.out.println(participant + ": Conciliando por Saldo");
             conciliateByBalance(participant);
             //Concilia por documentos
+            System.out.println(participant + ": Conciliando por Documento");
             conciliateByDocuments(participant);
             //Concilia por valor
+            System.out.println(participant + ": Conciliando por Valor");
             conciliateByValues(participant);
             //Concilia pelos valores apos cada valor
+            System.out.println(participant + ": Conciliando por Valores Futuros");
             conciliateByAfterValues(participant);
 
             //mostra informações

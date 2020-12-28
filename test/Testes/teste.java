@@ -30,15 +30,15 @@ public class teste {
     }
     
     public static void test() {
-        Integer enterprise = 251;
-        Integer account = 1584;
+        Integer enterprise = 657;
+        Integer account = 148;
         Integer participant = null;
         Calendar startDate = Calendar.getInstance();
         Calendar endDate = Calendar.getInstance();
-        Boolean reworkConciliate = true;
+        Boolean reworkConciliate = false;
 
-        startDate.set(2020, 9, 1);
-        endDate.set(2020, 9, 31);
+        startDate.set(2019, 0, 1);
+        endDate.set(2020, 10, 30);
 
         System.out.println(
                 Conciliate.principal(enterprise, account, participant, startDate, endDate, reworkConciliate)
