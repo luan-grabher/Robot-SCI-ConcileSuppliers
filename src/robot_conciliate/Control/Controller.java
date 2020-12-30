@@ -105,7 +105,9 @@ public class Controller {
 
         @Override
         public void run() {
-            ContabilityEntries_Model.updateContabilityEntriesOnDatabase(entries);
+            if(!ContabilityEntries_Model.updateContabilityEntriesOnDatabase(entries)){
+                throw new Error("Ocorreu um erro ao tentar atualizar os dados no banco de dados! Por favor avise o programador sobre isso!");
+            }
         }
     }
 
