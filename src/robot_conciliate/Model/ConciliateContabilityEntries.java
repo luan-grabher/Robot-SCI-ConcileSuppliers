@@ -147,14 +147,16 @@ public class ConciliateContabilityEntries {
             participants.put(participantFilter, participantFilter);
             //Cria lista de documentos
             entries.forEach((key, ce) -> {
-                documents.put(ce.getDocument(), ce.getDocument());
+                String document = ce.getDocument() == null?"":ce.getDocument();
+                documents.put(document,document);
             });
         } else {
             //Se não cria uma lista com os participantes das entradas
             entries.forEach((key, ce) -> {
                 participants.put(ce.getParticipantCredit(), ce.getParticipantCredit());
                 participants.put(ce.getParticipantDebit(), ce.getParticipantDebit());
-                documents.put(ce.getDocument(), ce.getDocument());
+                String document = ce.getDocument() == null?"":ce.getDocument();
+                documents.put(document,document);
             });
         }
     }

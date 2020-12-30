@@ -33,7 +33,7 @@ public class ChangeEntries {
             loading.updateBar(i + " de " + size, i);
 
             //Se não possuir documento
-            if ("".equals(contabilityEntry.getDocument())) {
+            if ("".equals(contabilityEntry.getDocument()) || contabilityEntry.getDocument() == null) {
                 String newDocument;
 
                 String reference = getRefNumber(contabilityEntry.getComplement());
