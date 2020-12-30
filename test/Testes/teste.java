@@ -1,13 +1,7 @@
 package Testes;
 
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
 import java.util.TreeMap;
 import robot_conciliate.Conciliate;
 
@@ -55,14 +49,14 @@ public class teste {
     }
     
     public static void test() {
-        Integer enterprise = 645;
-        Integer account = 148;
-        Integer participant = 3967;
+        Integer enterprise = 21;
+        Integer account = 963;
+        Integer participant = null;
         Calendar startDate = Calendar.getInstance();
         Calendar endDate = Calendar.getInstance();
-        Boolean reworkConciliate = false;
+        Boolean reworkConciliate = true;
 
-        startDate.set(2020, 10, 1);
+        startDate.set(2017, 0, 1);
         endDate.set(2020, 10, 30);
 
         System.out.println(

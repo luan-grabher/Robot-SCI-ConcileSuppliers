@@ -145,15 +145,17 @@ public class ConciliateContabilityEntries {
         if (participantFilter != null) {
             //Adiciona o participante na lista
             participants.put(participantFilter, participantFilter);
+            //Cria lista de documentos
+            entries.forEach((key, ce) -> {
+                documents.put(ce.getDocument(), ce.getDocument());
+            });
         } else {
             //Se não cria uma lista com os participantes das entradas
-            for (Map.Entry<Integer, ContabilityEntry> entry : entries.entrySet()) {
-                Integer key = entry.getKey();
-                ContabilityEntry ce = entry.getValue();
+            entries.forEach((key, ce) -> {
                 participants.put(ce.getParticipantCredit(), ce.getParticipantCredit());
                 participants.put(ce.getParticipantDebit(), ce.getParticipantDebit());
                 documents.put(ce.getDocument(), ce.getDocument());
-            }
+            });
         }
     }
 
@@ -329,7 +331,9 @@ public class ConciliateContabilityEntries {
 
     /**
      * Retorna um mapa com as datas dos lançamentos não conciliados
-     * @param participantCode Codigo do participante, deixe nulo para qualquer participante
+     *
+     * @param participantCode Codigo do participante, deixe nulo para qualquer
+     * participante
      */
     private Map<Long, Calendar> getNotConciledsCalendarsMap(Integer participantCode) {
         //Cria mapa que irá ordenar por data
