@@ -68,7 +68,7 @@ public class Conciliate {
         String dataInicialStr = Dates.getCalendarInThisStringFormat(dataInicial, "dd/MM/yyyy");
         String dataFinalStr = Dates.getCalendarInThisStringFormat(dataFinal, "dd/MM/yyyy");
 
-        name = "Conciliação Automática -- #" + codEmpresa + " conta " + app.getParametro("contaCTB").getString() + " participante " + app.getParametro("participant").getString() + " " + dataInicialStr + " -> " + dataFinalStr;
+        name = "Conciliação Automática -- #" + codEmpresa + " conta '" + app.getParametro("contaCTB").getString() + "' participante '" + app.getParametro("participant").getString() + "' - " + dataInicialStr + " -> " + dataFinalStr + " | zerar concilação: " + zerarConciliacao;
         app.setNome(name);
 
         //Se a Lista de contas estiver vazia e só tiver uma conta
