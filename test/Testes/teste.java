@@ -1,14 +1,31 @@
 package Testes;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.TreeMap;
+import javax.swing.JOptionPane;
 import robot_conciliate.Conciliate;
 
 public class teste {
 
     public static void main(String[] args) {
-        test();
+        errorTest();
+    }
+    
+    public static void errorTest(){
+        try{
+            throw new Error("Deu um erro aqui");
+            
+        }catch(Error e){
+            e.printStackTrace();            
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            
+            JOptionPane.showMessageDialog(null, sw.toString());
+        }        
     }
     
     public static void testCalendardif(){

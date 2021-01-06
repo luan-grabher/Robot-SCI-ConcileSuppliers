@@ -2,6 +2,8 @@ package robot_conciliate.Model;
 
 import Dates.Dates;
 import SimpleView.Loading;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -187,39 +189,48 @@ public class ConciliateContabilityEntries {
         int i = 0;
 
         for (Map.Entry<Integer, Integer> part : participants.entrySet()) {
-            //Pega numero participante
-            Integer participant = part.getKey();
+            try {
+                //Pega numero participante
+                Integer participant = part.getKey();
 
-            //Atualiza barra
-            i++;
-            loading.updateBar(i + " de " + participants.size() + "(" + participant + ")", i);
+                //Atualiza barra
+                i++;
+                loading.updateBar(i + " de " + participants.size() + "(" + participant + ")", i);
 
-            //Mostra informações
-            infos.append("\nPARTICIPANTE ").append(participant).append(":");
-            infos.append("\n    Conciliados ANTES da conciliação:");
-            showConciledInfos(participant);
+                //Mostra informações
+                infos.append("\nPARTICIPANTE ").append(participant).append(":");
+                infos.append("\n    Conciliados ANTES da conciliação:");
+                showConciledInfos(participant);
 
-            //Define os não conciliados para percorrer a lista mais rapido
-            setNotConcileds();
+                //Define os não conciliados para percorrer a lista mais rapido
+                setNotConcileds();
 
-            //Concilia por saldo
-            System.out.println(participant + ": Conciliando por Saldo");
-            conciliateByBalance(participant);
-            //Concilia por documentos
-            System.out.println(participant + ": Conciliando por Documento");
-            conciliateByDocuments(participant);
-            //Concilia por valor
-            System.out.println(participant + ": Conciliando por Valor");
-            conciliateByValues(participant);
-            //Concilia pelos valores apos cada valor
-            System.out.println(participant + ": Conciliando por Valores Futuros");
-            conciliateByAfterValues(participant);
+                //Concilia por saldo
+                System.out.println(participant + ": Conciliando por Saldo");
+                conciliateByBalance(participant);
+                //Concilia por documentos
+                System.out.println(participant + ": Conciliando por Documento");
+                conciliateByDocuments(participant);
+                //Concilia por valor
+                System.out.println(participant + ": Conciliando por Valor");
+                conciliateByValues(participant);
+                //Concilia pelos valores apos cada valor
+                System.out.println(participant + ": Conciliando por Valores Futuros");
+                conciliateByAfterValues(participant);
 
-            //mostra informações
-            infos.append("\n    Conciliados APÓS conciliação:");
-            showConciledInfos(participant);
+                //mostra informações
+                infos.append("\n    Conciliados APÓS conciliação:");
+                showConciledInfos(participant);
 
-            infos.append("\n");
+                infos.append("\n");
+            } catch (Exception e) {
+                e.printStackTrace();            
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                throw new Error("Ocorreu um erro no participante " + part.getKey() + ": " + sw.toString() + "\n\n");
+            }
+            
         }
 
         loading.dispose();
