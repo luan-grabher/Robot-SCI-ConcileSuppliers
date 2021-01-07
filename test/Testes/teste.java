@@ -1,5 +1,7 @@
 package Testes;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.TreeMap;
@@ -8,7 +10,17 @@ import robot_conciliate.Conciliate;
 public class teste {
 
     public static void main(String[] args) {
-        test();
+        bigTest();
+    }
+    
+    public static void bigTest(){
+        BigDecimal bd = new BigDecimal(BigInteger.ONE);
+        
+        for (int i = 0; i < 10; i++) {
+            bd.add(BigDecimal.TEN);
+        }
+        
+        System.out.println(bd);
     }
     
     public static void testCalendardif(){

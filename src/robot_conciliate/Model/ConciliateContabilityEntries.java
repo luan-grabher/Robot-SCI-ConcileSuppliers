@@ -29,7 +29,7 @@ public class ConciliateContabilityEntries {
     private Map<Integer, ContabilityEntry> notConcileds = new TreeMap<>();
 
     private final Map<Integer, Integer> participants = new TreeMap<>();
-    private final Map<String, String> documents = new TreeMap<>();
+    //private final Map<String, String> documents = new TreeMap<>();
 
     private Predicate<Entry<Integer, ContabilityEntry>> defaultPredicate;
     private Predicate<Entry<Integer, ContabilityEntry>> accountPredicateCredit;
@@ -146,17 +146,17 @@ public class ConciliateContabilityEntries {
             //Adiciona o participante na lista
             participants.put(participantFilter, participantFilter);
             //Cria lista de documentos
-            entries.forEach((key, ce) -> {
-                String document = ce.getDocument() == null?"":ce.getDocument();
-                documents.put(document,document);
-            });
+            //entries.forEach((key, ce) -> {
+            //    String document = ce.getDocument() == null?"":ce.getDocument();
+            //    documents.put(document,document);
+            //});
         } else {
             //Se não cria uma lista com os participantes das entradas
             entries.forEach((key, ce) -> {
                 participants.put(ce.getParticipantCredit(), ce.getParticipantCredit());
                 participants.put(ce.getParticipantDebit(), ce.getParticipantDebit());
-                String document = ce.getDocument() == null?"":ce.getDocument();
-                documents.put(document,document);
+                String document = ce.getDocument() == null ? "" : ce.getDocument();
+                //documents.put(document,document);
             });
         }
     }
@@ -232,17 +232,47 @@ public class ConciliateContabilityEntries {
      * credito e debito
      */
     private void conciliateByDocuments(Integer participant) {
-        for (Entry<String, String> entry : documents.entrySet()) {
-            String document = entry.getKey();
-            Predicate<Entry<Integer, ContabilityEntry>> documentPredicate = defaultPredicate.and(e -> e.getValue().getDocument().equals(document));
+        //Cria lista de documentos do participante
+        Map<String, BigDecimal> documentCreditTotals = new TreeMap<>();
+        Map<String, BigDecimal> documentDebitTotals = new TreeMap<>();
+        Map<String, BigDecimal> documents = new TreeMap<>();
 
-            Predicate<Entry<Integer, ContabilityEntry>> creditPredicate = conciledPredicate.negate().and(accountPredicateCredit.and(documentPredicate.and(e -> e.getValue().getParticipantCredit().equals(participant))));
-            Predicate<Entry<Integer, ContabilityEntry>> debitPredicate = conciledPredicate.negate().and(accountPredicateDebit.and(documentPredicate.and(e -> e.getValue().getParticipantDebit().equals(participant))));
+        //Percorre lançamentos do participante para fazer soma dos creditos e debitos dos documentos
+        notConcileds.forEach((key, ce) -> {
+            if (ce.getParticipantCredit().equals(participant)) {//Se o participante for de credito
+                String doc = ce.getDocument() == null ? "" : ce.getDocument();//pega doc
+                BigDecimal newVal = documentCreditTotals.getOrDefault(doc, BigDecimal.ZERO).add(ce.getValue());
+                documentCreditTotals.put(doc, newVal);
+            } else if (ce.getParticipantDebit().equals(participant)) {//Se o participante for de debito
+                String doc = ce.getDocument() == null ? "" : ce.getDocument();//pega doc
+                BigDecimal newVal = documentDebitTotals.getOrDefault(doc, BigDecimal.ZERO).add(ce.getValue());
+                documentDebitTotals.put(doc, newVal);
+            }
+        });
 
-            conciliateByPredicates(creditPredicate, debitPredicate);
-        }
+        //Cria lista de documentos
+        documents.putAll(documentCreditTotals);
+        documents.putAll(documentDebitTotals);
 
-        refreshNotConcileds();
+        //Percorre os documentos
+        documents.forEach((doc, b) -> {
+            //Se o credito for maior que zero e o credito for igual ao debito
+            if (documentCreditTotals
+                    .getOrDefault(doc, BigDecimal.ZERO).compareTo(BigDecimal.ZERO) > 0 &&
+                    documentCreditTotals
+                    .getOrDefault(doc, BigDecimal.ZERO)
+                    .compareTo(
+                            documentDebitTotals
+                                    .getOrDefault(doc, BigDecimal.ZERO)) == 0) {
+                //Percorre nao conciliados para conciliar
+                notConcileds.forEach((key,ce) ->{
+                    if(ce.getDocument().equals(doc)){ //Se for o mesmo doc
+                        ce.conciliate();//concilia o lançamento
+                    }
+                });
+            }
+        });
+        refreshNotConcileds(); //atualiza os lançamentos nao conciliados
     }
 
     /**
