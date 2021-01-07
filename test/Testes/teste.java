@@ -1,26 +1,31 @@
 package Testes;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.TreeMap;
+import javax.swing.JOptionPane;
 import robot_conciliate.Conciliate;
 
 public class teste {
 
     public static void main(String[] args) {
-        bigTest();
+        errorTest();
     }
     
-    public static void bigTest(){
-        BigDecimal bd = new BigDecimal(BigInteger.ONE);
-        
-        for (int i = 0; i < 10; i++) {
-            bd.add(BigDecimal.TEN);
-        }
-        
-        System.out.println(bd);
+    public static void errorTest(){
+        try{
+            throw new Error("Deu um erro aqui");
+            
+        }catch(Error e){
+            e.printStackTrace();            
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            
+            JOptionPane.showMessageDialog(null, sw.toString());
+        }        
     }
     
     public static void testCalendardif(){
