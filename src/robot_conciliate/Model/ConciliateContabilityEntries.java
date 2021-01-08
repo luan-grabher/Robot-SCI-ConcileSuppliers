@@ -5,6 +5,7 @@ import SimpleView.Loading;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -353,9 +354,13 @@ public class ConciliateContabilityEntries {
                             }
                         });
 
-                        //Concilia no banco também pois depois pode ter erro, pois só conciliou os lançamentos que estou usando
-                        String listToConciliate = ContabilityEntries_Model.getEntriesListBeforeDate(date, enterprise, account, false, participantCode);
-                        ContabilityEntries_Model.conciliateKeysOnDatabase(enterprise, listToConciliate, Boolean.TRUE);
+                        try{
+                            //Concilia no banco também pois depois pode ter erro, pois só conciliou os lançamentos que estou usando
+                            String listToConciliate = ContabilityEntries_Model.getEntriesListBeforeDate(date, enterprise, account, false, participantCode);
+                            ContabilityEntries_Model.conciliateKeysOnDatabase(enterprise, listToConciliate, Boolean.TRUE);
+                        }catch(SQLException e){
+                            throw new RuntimeException(e);
+                        }
                     }
                 } else {
                     //Sai do foreach
@@ -364,6 +369,12 @@ public class ConciliateContabilityEntries {
             });
         } catch (Error e) {
             //Saiu do foreach
+        } catch (RuntimeException e){
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);           
+
+            throw new Error("Erro ao pegar saldo do aprticipante " + participantCode + sw.toString());
         }
 
         //Quebra linha porque tava usando somente print

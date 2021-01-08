@@ -6,11 +6,16 @@ import Entity.Warning;
 import SimpleDotEnv.Env;
 import fileManager.FileManager;
 import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.sql.SQLException;
 import robot_conciliate.Model.ChangeEntries;
 import robot_conciliate.Model.ConciliateContabilityEntries;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import lctocontabil.Entity.ContabilityEntry;
 import lctocontabil.Model.ContabilityEntries_Model;
 import sql.Database;
@@ -43,20 +48,20 @@ public class Controller {
 
         @Override
         public void run() {
-            if(databaseCfgFilePath != null && !databaseCfgFilePath.equals("")){
+            if (databaseCfgFilePath != null && !databaseCfgFilePath.equals("")) {
                 File file = FileManager.getFile(databaseCfgFilePath);
-                if(file.exists()){
+                if (file.exists()) {
                     Database.setStaticObject(new Database(file));
 
                     if (!Database.getDatabase().testConnection()) {
                         throw new Error("Erro ao conectar ao banco de dados!");
                     }
-                }else{
+                } else {
                     throw new Error("O arquivo de configuração não existe em '" + databaseCfgFilePath + "'");
                 }
-            }else{
+            } else {
                 throw new Error("Não foi encontrado o local do arquivo de configurção do banco.");
-            }                        
+            }
         }
     }
 
@@ -80,8 +85,8 @@ public class Controller {
             swaps.put("dateEnd", Dates.getCalendarInThisStringFormat(endDate, "YYYY-MM-dd"));
 
             entries.putAll(ContabilityEntries_Model.getEntries(sql, swaps));
-            
-            if(entries.isEmpty()){
+
+            if (entries.isEmpty()) {
                 throw new Error("Nenhum lançamento encontrado no banco!");
             }
         }
@@ -105,10 +110,24 @@ public class Controller {
 
         @Override
         public void run() {
-            if(!ContabilityEntries_Model.updateContabilityEntriesOnDatabase(entries)){
-                throw new Error("Ocorreu um erro ao tentar atualizar os dados no banco de dados! Por favor avise o programador sobre isso!");
+            try {
+                ContabilityEntries_Model.updateContabilityEntriesOnDatabase(entries);
+            } catch (SQLException ex) {
+                throw new Error("Ocorreu um erro ao tentar atualizar os dados "
+                        + "no banco de dados! Por favor avise o programador"
+                        + " sobre isso!\n"
+                        + getStackTrace(ex)
+                );
             }
         }
+    }
+
+    private String getStackTrace(SQLException e) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        e.printStackTrace(pw);
+
+        return sw.toString();
     }
 
     /**
@@ -122,10 +141,9 @@ public class Controller {
         }
     }
 
-    
-    /** 
-    * Concilia os lançamentos
-    */
+    /**
+     * Concilia os lançamentos
+     */
     public class conciliateEntries extends Executavel {
 
         @Override
