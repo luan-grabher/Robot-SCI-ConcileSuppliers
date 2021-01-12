@@ -2,16 +2,25 @@ package Testes;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.text.Normalizer;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 import javax.swing.JOptionPane;
 import robot_conciliate.Conciliate;
 
 public class teste {
 
     public static void main(String[] args) {
-        errorTest();
+        testeAcentos();
+    }
+    
+    public static void testeAcentos() {
+        String str = "Olá mundão caçada ÒÌÈÊÕÃ";
+        String nfdNormalizedString = Normalizer.normalize(str, Normalizer.Form.NFD); 
+        Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+        System.out.println(pattern.matcher(nfdNormalizedString).replaceAll(""));
     }
     
     public static void errorTest(){
