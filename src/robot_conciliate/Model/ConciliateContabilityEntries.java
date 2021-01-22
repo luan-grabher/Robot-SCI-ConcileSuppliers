@@ -39,8 +39,8 @@ public class ConciliateContabilityEntries {
     private Predicate<Entry<Integer, ContabilityEntry>> accountPredicateDebit;
     private Predicate<Entry<Integer, ContabilityEntry>> conciledPredicate;
 
-    private final static Integer PARTICIPANT_TYPE_CREDIT = 0;
-    private final static Integer PARTICIPANT_TYPE_DEBIT = 1;
+    private final static Integer TYPE_CREDIT = 0;
+    private final static Integer TYPE_DEBIT = 1;
 
     private final StringBuilder infos = new StringBuilder("Conferências:\n");
     private long entriesConciledBefore = 0;
@@ -225,13 +225,13 @@ public class ConciliateContabilityEntries {
 
                 infos.append("\n");
             } catch (Exception e) {
-                e.printStackTrace();            
+                e.printStackTrace();
                 StringWriter sw = new StringWriter();
                 PrintWriter pw = new PrintWriter(sw);
                 e.printStackTrace(pw);
                 throw new Error("Ocorreu um erro no participante " + part.getKey() + ": " + sw.toString() + "\n\n");
             }
-            
+
         }
 
         loading.dispose();
@@ -270,15 +270,15 @@ public class ConciliateContabilityEntries {
         documents.forEach((doc, b) -> {
             //Se o credito for maior que zero e o credito for igual ao debito
             if (documentCreditTotals
-                    .getOrDefault(doc, BigDecimal.ZERO).compareTo(BigDecimal.ZERO) > 0 &&
-                    documentCreditTotals
-                    .getOrDefault(doc, BigDecimal.ZERO)
-                    .compareTo(
-                            documentDebitTotals
-                                    .getOrDefault(doc, BigDecimal.ZERO)) == 0) {
+                    .getOrDefault(doc, BigDecimal.ZERO).compareTo(BigDecimal.ZERO) > 0
+                    && documentCreditTotals
+                            .getOrDefault(doc, BigDecimal.ZERO)
+                            .compareTo(
+                                    documentDebitTotals
+                                            .getOrDefault(doc, BigDecimal.ZERO)) == 0) {
                 //Percorre nao conciliados para conciliar
-                notConcileds.forEach((key,ce) ->{
-                    if(ce.getDocument().equals(doc)){ //Se for o mesmo doc
+                notConcileds.forEach((key, ce) -> {
+                    if (ce.getDocument().equals(doc)) { //Se for o mesmo doc
                         ce.conciliate();//concilia o lançamento
                     }
                 });
@@ -354,11 +354,11 @@ public class ConciliateContabilityEntries {
                             }
                         });
 
-                        try{
+                        try {
                             //Concilia no banco também pois depois pode ter erro, pois só conciliou os lançamentos que estou usando
                             String listToConciliate = ContabilityEntries_Model.getEntriesListBeforeDate(date, enterprise, account, false, participantCode);
                             ContabilityEntries_Model.conciliateKeysOnDatabase(enterprise, listToConciliate, Boolean.TRUE);
-                        }catch(SQLException e){
+                        } catch (SQLException e) {
                             throw new RuntimeException(e);
                         }
                     }
@@ -369,10 +369,10 @@ public class ConciliateContabilityEntries {
             });
         } catch (Error e) {
             //Saiu do foreach
-        } catch (RuntimeException e){
+        } catch (RuntimeException e) {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);           
+            e.printStackTrace(pw);
 
             throw new Error("Erro ao pegar saldo do aprticipante " + participantCode + sw.toString());
         }
@@ -433,7 +433,7 @@ public class ConciliateContabilityEntries {
             if (!ce.isConciliated()) {
 
                 //Define onde a conta está, se em crédito ou em débito 
-                Integer participantType = ce.getAccountCredit().equals(account) ? PARTICIPANT_TYPE_CREDIT : PARTICIPANT_TYPE_DEBIT;
+                Integer participantType = ce.getAccountCredit().equals(account) ? TYPE_CREDIT : TYPE_DEBIT;
 
                 //Define os totais de credito e débito
                 Map<Integer, ContabilityEntry> credits = new LinkedHashMap<>();
@@ -442,10 +442,10 @@ public class ConciliateContabilityEntries {
                 BigDecimal totalDebits = new BigDecimal("0.00");
 
                 //Coloca o próprio valor do lançamento atual verificado na soma                
-                if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {
+                if (participantType.equals(TYPE_CREDIT)) {
                     credits.put(key, ce);
                     totalCredits = totalCredits.add(ce.getValue());
-                } else if (participantType.equals(PARTICIPANT_TYPE_DEBIT)) {
+                } else if (participantType.equals(TYPE_DEBIT)) {
                     debits.put(key, ce);
                     totalDebits = totalDebits.add(ce.getValue());
                 }
@@ -458,12 +458,12 @@ public class ConciliateContabilityEntries {
                     BigDecimal diference;
 
                     //Se o participante estiver no credito, procura no debito
-                    if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {
+                    if (participantType.equals(TYPE_CREDIT)) {
                         //Define valor da difereça
                         diference = totalCredits.add(totalDebits.negate());
 
                         //Procura lançamento com valor exato que não esteja nos debitos e adiciona nos totais de achar
-                        if (findEntryWithDiference(debits, totalDebits, diference, PARTICIPANT_TYPE_CREDIT, participant)) {
+                        if (findEntryWithDiference(debits, totalDebits, diference, TYPE_CREDIT, participant)) {
                             //Se encontrou o valor reverso exato, vai fechar então não precisa mais tentar fechar
                             break;
                         }
@@ -472,7 +472,7 @@ public class ConciliateContabilityEntries {
                         diference = totalDebits.add(totalCredits.negate());
 
                         //Procura lançamento com valor exato que não esteja nos debitos e adiciona nos totais de achar
-                        if (findEntryWithDiference(credits, totalCredits, diference, PARTICIPANT_TYPE_DEBIT, participant)) {
+                        if (findEntryWithDiference(credits, totalCredits, diference, TYPE_DEBIT, participant)) {
                             //Adicionou o credito, entao pode vazar
                             break;
                         }
@@ -487,12 +487,12 @@ public class ConciliateContabilityEntries {
                             participant,
                             ce.getValue(),
                             diference,
-                            participantType.equals(PARTICIPANT_TYPE_CREDIT) ? debits : credits
+                            participantType.equals(TYPE_CREDIT) ? debits : credits
                     );
 
                     //Se existir o múltiplo, adiciona na lista de reversa
                     if (multipleEntry != null) {
-                        if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {
+                        if (participantType.equals(TYPE_CREDIT)) {
                             debits.put(multipleEntry.getKey(), multipleEntry);
                             totalDebits = totalDebits.add(multipleEntry.getValue());
                         } else {
@@ -561,23 +561,21 @@ public class ConciliateContabilityEntries {
      * @return Lançamento opcional, pode ser verificado com "isPresent"
      */
     private ContabilityEntry getEntryMultipleOfValue(Integer typeParticipant, Integer participant, BigDecimal value, BigDecimal diference, Map<Integer, ContabilityEntry> map) {
-        for (Entry<Integer, ContabilityEntry> entry : notConcileds.entrySet()) {
-            Integer key = entry.getKey();
-            ContabilityEntry ce = entry.getValue();
-
+        ContabilityEntry[] return0 = new ContabilityEntry[]{null};
+        notConcileds.forEach((key,ce)->{
             //Se o valor
             if (ce.getValue().compareTo(diference) == -1 //Menor que a diferenca
                     && !map.containsKey(key) //nao estiver no mapa
-                    && ((typeParticipant.equals(PARTICIPANT_TYPE_CREDIT)// o tipo for de crédito E
+                    && ((typeParticipant.equals(TYPE_CREDIT)// o tipo for de crédito E
                     && ce.getParticipantCredit().equals(participant)) //o participante de credito for o participante
-                    || (typeParticipant.equals(PARTICIPANT_TYPE_DEBIT)// ou o tipo for de debito E
+                    || (typeParticipant.equals(TYPE_DEBIT)// ou o tipo for de debito E
                     && ce.getParticipantDebit().equals(participant)))//o participante de debito for o participante
                     && value.remainder(ce.getValue()).compareTo(BigDecimal.ZERO) == 1) {
-                return ce;
+                return0[0] = ce;
             }
-        }
+        });
 
-        return null;
+        return return0[0];
     }
 
     /**
@@ -590,20 +588,18 @@ public class ConciliateContabilityEntries {
      * @return Lançamento opcional, pode ser verificado com "isPresent"
      */
     private ContabilityEntry getEntryWithValue(Integer typeParticipant, Integer participant, BigDecimal value, Map<Integer, ContabilityEntry> map) {
-        for (Entry<Integer, ContabilityEntry> entry : notConcileds.entrySet()) {
-            Integer key = entry.getKey();
-            ContabilityEntry ce = entry.getValue();
-
+        ContabilityEntry[] return0 = new ContabilityEntry[]{null};
+        notConcileds.forEach((key,ce)->{
             //Se o valor for igual ao procurado e não estiver no mapa definido
             if (ce.getValue().compareTo(value) == 0
                     && !map.containsKey(key)
-                    && ((typeParticipant.equals(PARTICIPANT_TYPE_CREDIT) && ce.getParticipantCredit().equals(participant))
-                    || (typeParticipant.equals(PARTICIPANT_TYPE_DEBIT) && ce.getParticipantDebit().equals(participant)))) {
-                return ce;
+                    && ((typeParticipant.equals(TYPE_CREDIT) && ce.getParticipantCredit().equals(participant))
+                    || (typeParticipant.equals(TYPE_DEBIT) && ce.getParticipantDebit().equals(participant)))) {
+                return0[0] = ce;
             }
-        }
+        });        
 
-        return null;
+        return return0[0];
     }
 
     /**
@@ -618,72 +614,65 @@ public class ConciliateContabilityEntries {
         Predicate<Entry<Integer, ContabilityEntry>> participantDebitPredicate = conciledPredicate.negate().and(accountPredicateDebit.and(e -> e.getValue().getParticipantDebit().equals(participant)));
 
         //Loading
-        Loading loading = new Loading("Conciliando por valor Participante " + participant, 0, entries.size());
-        int i = 0;
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("count", (Integer) 0);
+        vars.put("loading", (Loading) new Loading("Conciliando por valor Participante " + participant, 0, entries.size()));
+        vars.put("entries size", (String) " de " + entries.size());
 
         //Percorre todos lançamentos
-        for (Entry<Integer, ContabilityEntry> entry : entries.entrySet()) {
-            Integer key = entry.getKey();
-            ContabilityEntry ce = entry.getValue();
-
-            i++;
-            loading.updateBar(i + " de " + entries.size(), i);
+        notConcileds.forEach((key, ce) -> {
+            //Atualiza
+            vars.put("count", (Integer) vars.get("count") + 1);
+            ((Loading) vars.get("loading"))
+                    .updateBar(
+                            (Integer) vars.get("count") + (String) vars.get("entries size"),
+                            (Integer) vars.get("count")
+                    );
 
             //Se não estiver conciliado
             if (!ce.isConciliated()) {
                 //Define onde a conta está, se em crédito ou em débito 
-                Integer participantType = ce.getAccountCredit().equals(account) ? PARTICIPANT_TYPE_CREDIT : PARTICIPANT_TYPE_DEBIT;
+                Integer entryType = ce.getAccountCredit().equals(account) ? TYPE_CREDIT : TYPE_DEBIT;
 
-                Predicate<Entry<Integer, ContabilityEntry>> reverseParticipantPredicate;
-
-                //Define predicatos dos participantes                
-                if (participantType.equals(PARTICIPANT_TYPE_CREDIT)) {
-                    reverseParticipantPredicate = participantDebitPredicate;
-                } else {
-                    reverseParticipantPredicate = participantCreditPredicate;
-                }
-
+                //Cria mapa com lançamentos ordenados por data                
+                SortedMap<Calendar, ContabilityEntry> reverses = new TreeMap<>();
                 //Cria lista de lançamentos reversos menores e depois
-                Map<Integer, ContabilityEntry> reverses = entries.entrySet().stream().filter(
-                        reverseParticipantPredicate //Conta contrária
-                                .and(conciledPredicate.negate()) //Não conciliado
-                                .and(e -> e.getValue().getDate().compareTo(ce.getDate()) >= 0) //Data posterior
-                                .and(e -> e.getValue().getValue().compareTo(ce.getValue()) <= 0) //Valor Menor ou igual
-                ).collect(
-                        Collectors.toMap(e -> e.getKey(), e -> e.getValue())
-                );
-
-                //Cria mapa com lançamentos ordenados por data
-                SortedMap<Calendar, ContabilityEntry> reversesSorted = new TreeMap<>();
-                //Popula mapa com lançamentos ordenados por data
-                reverses.entrySet().forEach((reverseEntry) -> {
-                    reversesSorted.put(reverseEntry.getValue().getDate(), reverseEntry.getValue());
+                notConcileds.forEach((k, e) -> {
+                    if (!e.isConciliated()
+                            && e.getDate().compareTo(ce.getDate()) >= 0 //Data posterior
+                            && e.getValue().compareTo(ce.getValue()) <= 0 // Valor Menor ou igual
+                            /*Pega o contrario pela conta e participante*/
+                            && ((entryType.equals(TYPE_DEBIT) && e.getAccountCredit().equals(account) && e.getParticipantCredit().equals(participant))
+                            || (entryType.equals(TYPE_CREDIT) && e.getAccountDebit().equals(account) && e.getParticipantDebit().equals(participant)))) {
+                        reverses.put(e.getDate(), e);
+                    }
                 });
 
                 //Cria lista que irá receber os lançamentos para conciliar
                 Map<Integer, ContabilityEntry> toConciliate = new HashMap<>();
 
                 //Cria variavel com soma dos reversos
-                BigDecimal calculated = new BigDecimal("0.00");
+                BigDecimal[] calculated = new BigDecimal[]{new BigDecimal("0.00")};
 
                 //Percorre mapa ordenado por data
-                for (Entry<Calendar, ContabilityEntry> reverseEntry : reversesSorted.entrySet()) {
-                    ContabilityEntry obj = reverseEntry.getValue();
-                    //Se valor somado ao valor atual apurado reverso for menor ou igual ao valor verificado
-                    if (obj.getValue().add(calculated).compareTo(ce.getValue()) <= 0) {
-                        //Adiciona na lista de conciliar
-                        toConciliate.put(obj.getKey(), obj);
-                        //Soma no total de reversos
-                        calculated = calculated.add(obj.getValue());
-                        //Se não
-                    } else {
-                        //----Sai do loop
-                        break;
-                    }
+                try{
+                    reverses.forEach((d,e) ->{
+                        //Se valor somado ao valor atual apurado reverso for menor ou igual ao valor verificado
+                        if (e.getValue().add(calculated[0]).compareTo(ce.getValue()) <= 0) {
+                            //Adiciona na lista de conciliar
+                            toConciliate.put(e.getKey(), e);
+                            //Soma no total de reversos
+                            calculated[0] = calculated[0].add(e.getValue());
+                        } else {
+                            throw new Error("Break code!");
+                        }
+                    });
+                }catch(Error e){
+                    //Breaked
                 }
 
                 // Se valor dos reversos for igual ao valor verificado
-                if (calculated.compareTo(ce.getValue()) == 0) {
+                if (calculated[0].compareTo(ce.getValue()) == 0) {
                     //Adiciona na lista o proprio lançamento atual
                     toConciliate.put(key, ce);
                     //Concilia lançamentos da lista de conciliar
@@ -691,8 +680,10 @@ public class ConciliateContabilityEntries {
                 }
 
             }
-        }
+        });
 
-        loading.dispose();
+        ((Loading) vars.get("loading")).dispose();
+        //Não precisa dar refresh nos nao conciliados, pois nao faz mais nada depois
+        //refreshNotConcileds();
     }
 }
