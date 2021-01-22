@@ -34,7 +34,6 @@ public class ConciliateContabilityEntries {
     private final Map<Integer, Integer> participants = new TreeMap<>();
     //private final Map<String, String> documents = new TreeMap<>();
 
-    private Predicate<Entry<Integer, ContabilityEntry>> defaultPredicate;
     private Predicate<Entry<Integer, ContabilityEntry>> accountPredicateCredit;
     private Predicate<Entry<Integer, ContabilityEntry>> accountPredicateDebit;
     private Predicate<Entry<Integer, ContabilityEntry>> conciledPredicate;
@@ -62,7 +61,8 @@ public class ConciliateContabilityEntries {
      * @return Retorna String com inforamções sobre conciliados
      */
     public String getInfos() {
-        entriesConciledAfter = this.entries.entrySet().stream().filter(conciledPredicate).count();
+
+        entriesConciledAfter = entries.size() - notConcileds.size();
 
         BigDecimal beforePercent = new BigDecimal(entriesConciledBefore * 100 / entries.size());
         BigDecimal afterPercent = new BigDecimal(entriesConciledAfter * 100 / entries.size());
@@ -94,27 +94,23 @@ public class ConciliateContabilityEntries {
      */
     public void refreshNotConcileds() {
         List<Integer> toRemove = new ArrayList<>();
-
-        for (Entry<Integer, ContabilityEntry> mapEntry : notConcileds.entrySet()) {
-            ContabilityEntry entry = mapEntry.getValue();
-
+        notConcileds.forEach((k, entry) -> {
             //Se estiver conciliado
             if (entry.isConciliated()) {
-                //Adiciona na lista para remover
-                toRemove.add(entry.getKey());
+                toRemove.add(entry.getKey()); /*Adiciona na lista para remover*/
             }
-        }
+        });
 
         //remove entradas não conciliadas
-        for (Integer removeId : toRemove) {
-            notConcileds.remove(removeId);
-        }
+        toRemove.forEach((key) -> {
+            notConcileds.remove(key);
+        });
     }
 
     /**
      * Remove dos não conciliados dos conciliados
      *
-     * @param removeMap removerá todos os lançaentos deste mapa do mapa de nao
+     * @param removeMap removerá todos os lançamentos deste mapa do mapa de nao
      * conciliados
      */
     public void removeOfNotConcileds(Map<Integer, ContabilityEntry> removeMap) {
@@ -171,15 +167,23 @@ public class ConciliateContabilityEntries {
      */
     private void showConciledInfos(Integer participant) {
         NumberFormat nf = NumberFormat.getCurrencyInstance();
+        
+        Map<String, BigDecimal> totals = new HashMap<>();
+        totals.put("credit", new BigDecimal("0.00"));
+        totals.put("debit", new BigDecimal("0.00"));
+        
+        entries.forEach((k, e) ->{
+            if(e.isConciliated()){
+                if(e.getParticipantCredit().equals(participant)){
+                    totals.put("credit", totals.get("credit").add(e.getValue()));
+                }else if(e.getParticipantDebit().equals(participant)){
+                    totals.put("debit", totals.get("debit").add(e.getValue()));
+                }
+            }
+        });
 
-        Predicate<Entry<Integer, ContabilityEntry>> creditPredicate = accountPredicateCredit.and(conciledPredicate.and(e -> e.getValue().getParticipantCredit().equals(participant)));
-        Predicate<Entry<Integer, ContabilityEntry>> debitPredicate = accountPredicateDebit.and(conciledPredicate.and(e -> e.getValue().getParticipantDebit().equals(participant)));
-
-        BigDecimal credit = entries.entrySet().stream().filter(creditPredicate).map(e -> e.getValue().getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal debit = entries.entrySet().stream().filter(debitPredicate).map(e -> e.getValue().getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        infos.append("\n    Débito: ").append(nf.format(debit));
-        infos.append("\n    Crédito: ").append(nf.format(credit));
+        infos.append("\n    Débito: ").append(nf.format(totals.get("debit")));
+        infos.append("\n    Crédito: ").append(nf.format(totals.get("credit")));
     }
 
     /**
@@ -285,26 +289,6 @@ public class ConciliateContabilityEntries {
             }
         });
         refreshNotConcileds(); //atualiza os lançamentos nao conciliados
-    }
-
-    /**
-     * Concilia lançamentos se filtro de crédito e débito forem iguais na soma
-     */
-    private void conciliateByPredicates(Predicate<Entry<Integer, ContabilityEntry>> creditPredicate, Predicate<Entry<Integer, ContabilityEntry>> debitPredicate) {
-        //Busca total crédito e débito
-        BigDecimal credit = notConcileds.entrySet().stream().filter(creditPredicate).map(e -> e.getValue().getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal debit = notConcileds.entrySet().stream().filter(debitPredicate).map(e -> e.getValue().getValue()).reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        //Se o credito for igual ao debito
-        if (credit.compareTo(debit) == 0) {
-
-            //Concilia lançamentos que tiverem o predicato
-            ContabilityEntries_Model.defineConciliatedsTo(
-                    entries.entrySet().stream().filter(debitPredicate.or(creditPredicate))
-                            .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())),
-                    Boolean.TRUE
-            );
-        }
     }
 
     /**
@@ -531,9 +515,6 @@ public class ConciliateContabilityEntries {
      * @param mapValues mapa com valores que serão implementados caso ache
      * @param total Total do mapa
      * @param diference Total do valor maior
-     * @param totalReverse total do valor menor(reverso, valor procurado)
-     * @param participantReversePredicate Predicato para filtrar o participante
-     * reverso
      *
      * @return Retorna TRUE caso encontre e implemente no mapa
      * @return Retorna FALSE caso não encontre e não implementa no mapa
@@ -562,7 +543,7 @@ public class ConciliateContabilityEntries {
      */
     private ContabilityEntry getEntryMultipleOfValue(Integer typeParticipant, Integer participant, BigDecimal value, BigDecimal diference, Map<Integer, ContabilityEntry> map) {
         ContabilityEntry[] return0 = new ContabilityEntry[]{null};
-        notConcileds.forEach((key,ce)->{
+        notConcileds.forEach((key, ce) -> {
             //Se o valor
             if (ce.getValue().compareTo(diference) == -1 //Menor que a diferenca
                     && !map.containsKey(key) //nao estiver no mapa
@@ -582,14 +563,13 @@ public class ConciliateContabilityEntries {
      * Retorna ou não lançamento com o valor procurado
      *
      * @param map Mapa que o lançamento não pode estar
-     * @param predicateParticipant Predicato para filtrar o participante
      * @param value Valor procurado
      *
      * @return Lançamento opcional, pode ser verificado com "isPresent"
      */
     private ContabilityEntry getEntryWithValue(Integer typeParticipant, Integer participant, BigDecimal value, Map<Integer, ContabilityEntry> map) {
         ContabilityEntry[] return0 = new ContabilityEntry[]{null};
-        notConcileds.forEach((key,ce)->{
+        notConcileds.forEach((key, ce) -> {
             //Se o valor for igual ao procurado e não estiver no mapa definido
             if (ce.getValue().compareTo(value) == 0
                     && !map.containsKey(key)
@@ -597,7 +577,7 @@ public class ConciliateContabilityEntries {
                     || (typeParticipant.equals(TYPE_DEBIT) && ce.getParticipantDebit().equals(participant)))) {
                 return0[0] = ce;
             }
-        });        
+        });
 
         return return0[0];
     }
@@ -609,10 +589,6 @@ public class ConciliateContabilityEntries {
      * @param participant Codigo de participante
      */
     private void conciliateByAfterValues(Integer participant) {
-        //Cria predicatos
-        Predicate<Entry<Integer, ContabilityEntry>> participantCreditPredicate = conciledPredicate.negate().and(accountPredicateCredit.and(e -> e.getValue().getParticipantCredit().equals(participant)));
-        Predicate<Entry<Integer, ContabilityEntry>> participantDebitPredicate = conciledPredicate.negate().and(accountPredicateDebit.and(e -> e.getValue().getParticipantDebit().equals(participant)));
-
         //Loading
         Map<String, Object> vars = new HashMap<>();
         vars.put("count", (Integer) 0);
@@ -655,8 +631,8 @@ public class ConciliateContabilityEntries {
                 BigDecimal[] calculated = new BigDecimal[]{new BigDecimal("0.00")};
 
                 //Percorre mapa ordenado por data
-                try{
-                    reverses.forEach((d,e) ->{
+                try {
+                    reverses.forEach((d, e) -> {
                         //Se valor somado ao valor atual apurado reverso for menor ou igual ao valor verificado
                         if (e.getValue().add(calculated[0]).compareTo(ce.getValue()) <= 0) {
                             //Adiciona na lista de conciliar
@@ -667,7 +643,7 @@ public class ConciliateContabilityEntries {
                             throw new Error("Break code!");
                         }
                     });
-                }catch(Error e){
+                } catch (Error e) {
                     //Breaked
                 }
 
@@ -683,7 +659,7 @@ public class ConciliateContabilityEntries {
         });
 
         ((Loading) vars.get("loading")).dispose();
-        //Não precisa dar refresh nos nao conciliados, pois nao faz mais nada depois
-        //refreshNotConcileds();
+        //Dá um refresh nos não conciliados para poder mostrar as infos mais rapido
+        refreshNotConcileds();
     }
 }
