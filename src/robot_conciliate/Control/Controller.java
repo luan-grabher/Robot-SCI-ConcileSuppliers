@@ -81,8 +81,8 @@ public class Controller {
             swaps.put("enterprise", enterprise.toString());
             swaps.put("account", account.toString());
             swaps.put("participant", participant == null ? "NULL" : participant.toString());
-            swaps.put("dateStart", Dates.getCalendarInThisStringFormat(startDate, "YYYY-MM-dd"));
-            swaps.put("dateEnd", Dates.getCalendarInThisStringFormat(endDate, "YYYY-MM-dd"));
+            swaps.put("dateStart", Dates.getCalendarInThisStringFormat(startDate, "yyyy-MM-dd"));
+            swaps.put("dateEnd", Dates.getCalendarInThisStringFormat(endDate, "yyyy-MM-dd"));
 
             entries.putAll(ContabilityEntries_Model.getEntries(sql, swaps));
 

@@ -75,14 +75,14 @@ public class teste {
     }
     
     public static void test() {
-        Integer enterprise = 331;
+        Integer enterprise = 21;
         Integer account = 148;
-        Integer participant = 889343;
+        Integer participant = 7620;
         Calendar startDate = Calendar.getInstance();
         Calendar endDate = Calendar.getInstance();
         Boolean reworkConciliate = false;
 
-        startDate.set(2020, 0, 1);
+        startDate.set(2020, 11, 20);
         endDate.set(2020, 11, 31);
 
         System.out.println(
