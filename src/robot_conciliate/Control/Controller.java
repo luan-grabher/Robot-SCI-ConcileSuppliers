@@ -14,8 +14,6 @@ import robot_conciliate.Model.ConciliateContabilityEntries;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import lctocontabil.Entity.ContabilityEntry;
 import lctocontabil.Model.ContabilityEntries_Model;
 import sql.Database;
@@ -149,10 +147,8 @@ public class Controller {
         @Override
         public void run() {
             ConciliateContabilityEntries model = new ConciliateContabilityEntries(entries, enterprise, account, participant, startDate, endDate);
-            System.out.println("Definindo predicatos padrões");
-            model.setDefaultPredicates();
             System.out.println("Criando lista de participantes e documentos");
-            model.createParticipantAndDcoumentList();
+            model.createParticipantList();
             System.out.println("Conciliando participantes");
             model.conciliateParticipants();
             throw new Warning(model.getInfos());

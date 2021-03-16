@@ -16,8 +16,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import lctocontabil.Entity.ContabilityEntry;
 import lctocontabil.Model.ContabilityEntries_Model;
 
@@ -34,10 +32,6 @@ public class ConciliateContabilityEntries {
     private final Map<Integer, Integer> participants = new TreeMap<>();
     //private final Map<String, String> documents = new TreeMap<>();
 
-    private Predicate<Entry<Integer, ContabilityEntry>> accountPredicateCredit;
-    private Predicate<Entry<Integer, ContabilityEntry>> accountPredicateDebit;
-    private Predicate<Entry<Integer, ContabilityEntry>> conciledPredicate;
-
     private final static Integer TYPE_CREDIT = 0;
     private final static Integer TYPE_DEBIT = 1;
 
@@ -53,6 +47,10 @@ public class ConciliateContabilityEntries {
         this.participantFilter = participant;
         this.dateStart = dateStart;
         this.dateEnd = dateEnd;
+
+        /*Define total de lctos conciliados antes*/
+        setNotConcileds();
+        entriesConciledBefore = entries.size() - notConcileds.size();
     }
 
     /**
@@ -80,13 +78,11 @@ public class ConciliateContabilityEntries {
      */
     public void setNotConcileds() {
         notConcileds = new TreeMap<>();
-        for (Entry<Integer, ContabilityEntry> mapEntry : entries.entrySet()) {
-            ContabilityEntry entry = mapEntry.getValue();
-
+        entries.forEach((key, entry) -> {
             if (!entry.isConciliated()) {
                 notConcileds.put(entry.getKey(), entry);
             }
-        }
+        });
     }
 
     /**
@@ -97,7 +93,8 @@ public class ConciliateContabilityEntries {
         notConcileds.forEach((k, entry) -> {
             //Se estiver conciliado
             if (entry.isConciliated()) {
-                toRemove.add(entry.getKey()); /*Adiciona na lista para remover*/
+                toRemove.add(entry.getKey());
+                /*Adiciona na lista para remover*/
             }
         });
 
@@ -115,47 +112,26 @@ public class ConciliateContabilityEntries {
      */
     public void removeOfNotConcileds(Map<Integer, ContabilityEntry> removeMap) {
         //Percorre o mapa fornecido
-        for (Entry<Integer, ContabilityEntry> mapEntry : removeMap.entrySet()) {
+        removeMap.forEach((key, entry) -> {
             //Remove lançamento dos nao conciliados
-            notConcileds.remove(mapEntry.getKey());
-        }
-    }
-
-    /**
-     * Define predicados padrões
-     */
-    public void setDefaultPredicates() {
-        //Não precisa utilizar o account predicate porque na teoria ja deveria ter somente os lançamentos da conta
-        accountPredicateCredit = e -> e.getValue().getAccountCredit().equals(account);
-        accountPredicateDebit = e -> e.getValue().getAccountDebit().equals(account);
-
-        conciledPredicate = e -> e.getValue().isConciliated();
-        defaultPredicate = conciledPredicate.negate();
-
-        entriesConciledBefore = this.entries.entrySet().stream().filter(conciledPredicate).count();
+            notConcileds.remove(key);
+        });
     }
 
     /**
      * Cria lista com participantes e documentos dos lançamentos ou unicamente
      * com o participante passado
      */
-    public void createParticipantAndDcoumentList() {
+    public void createParticipantList() {
         //Se tiver filtro de participante
         if (participantFilter != null) {
             //Adiciona o participante na lista
             participants.put(participantFilter, participantFilter);
-            //Cria lista de documentos
-            //entries.forEach((key, ce) -> {
-            //    String document = ce.getDocument() == null?"":ce.getDocument();
-            //    documents.put(document,document);
-            //});
         } else {
             //Se não cria uma lista com os participantes das entradas
             entries.forEach((key, ce) -> {
                 participants.put(ce.getParticipantCredit(), ce.getParticipantCredit());
                 participants.put(ce.getParticipantDebit(), ce.getParticipantDebit());
-                String document = ce.getDocument() == null ? "" : ce.getDocument();
-                //documents.put(document,document);
             });
         }
     }
@@ -167,16 +143,16 @@ public class ConciliateContabilityEntries {
      */
     private void showConciledInfos(Integer participant) {
         NumberFormat nf = NumberFormat.getCurrencyInstance();
-        
+
         Map<String, BigDecimal> totals = new HashMap<>();
         totals.put("credit", new BigDecimal("0.00"));
         totals.put("debit", new BigDecimal("0.00"));
-        
-        entries.forEach((k, e) ->{
-            if(e.isConciliated()){
-                if(e.getParticipantCredit().equals(participant)){
+
+        entries.forEach((k, e) -> {
+            if (e.isConciliated()) {
+                if (e.getParticipantCredit().equals(participant)) {
                     totals.put("credit", totals.get("credit").add(e.getValue()));
-                }else if(e.getParticipantDebit().equals(participant)){
+                } else if (e.getParticipantDebit().equals(participant)) {
                     totals.put("debit", totals.get("debit").add(e.getValue()));
                 }
             }
@@ -533,7 +509,8 @@ public class ConciliateContabilityEntries {
     }
 
     /**
-     * Retorna ou não lançamento com o valor múltiplo do valor pesquisado
+     * Retorna ou não o lançamento com o valor múltiplo do valor pesquisado que
+     * não esteja no mapa passado
      *
      * @param map Mapa que o lançamento não pode estar
      * @param predicateParticipant Predicato para filtrar o participante
@@ -543,18 +520,30 @@ public class ConciliateContabilityEntries {
      */
     private ContabilityEntry getEntryMultipleOfValue(Integer typeParticipant, Integer participant, BigDecimal value, BigDecimal diference, Map<Integer, ContabilityEntry> map) {
         ContabilityEntry[] return0 = new ContabilityEntry[]{null};
-        notConcileds.forEach((key, ce) -> {
-            //Se o valor
-            if (ce.getValue().compareTo(diference) == -1 //Menor que a diferenca
-                    && !map.containsKey(key) //nao estiver no mapa
-                    && ((typeParticipant.equals(TYPE_CREDIT)// o tipo for de crédito E
-                    && ce.getParticipantCredit().equals(participant)) //o participante de credito for o participante
-                    || (typeParticipant.equals(TYPE_DEBIT)// ou o tipo for de debito E
-                    && ce.getParticipantDebit().equals(participant)))//o participante de debito for o participante
-                    && value.remainder(ce.getValue()).compareTo(BigDecimal.ZERO) == 1) {
-                return0[0] = ce;
-            }
-        });
+        /*Se o valor for maior que zero*/
+        if (value.compareTo(BigDecimal.ZERO) == 1) {
+            notConcileds.forEach((key, ce) -> {
+                //Se o valor
+                if ( //O valor for maior do que zero
+                        ce.getValue().compareTo(BigDecimal.ZERO) == 1
+                        /*O valor seja menor ou igual a diferença*/
+                        && ce.getValue().compareTo(diference) <= 0
+                        /*Não esteja no mapa indicado*/
+                        && !map.containsKey(key)
+                        /*o tipo do participante seja de credito*/
+                        && ((typeParticipant.equals(TYPE_CREDIT)
+                        /*E o participante de credito for o mesmo participante*/
+                        && ce.getParticipantCredit().equals(participant))
+                        /* OU o tipo for de debito */
+                        || (typeParticipant.equals(TYPE_DEBIT)
+                        /*E o participante de debito for o participante*/
+                        && ce.getParticipantDebit().equals(participant)))
+                        /*Se for múltiplo do valor*/
+                        && value.remainder(ce.getValue()).compareTo(BigDecimal.ZERO) == 1) {
+                    return0[0] = ce;
+                }
+            });
+        }
 
         return return0[0];
     }
