@@ -376,20 +376,20 @@ public class ConciliateContabilityEntries {
      * @param participant Codigo do participante
      */
     private void conciliateByValues(Integer participant) {
+        Object[] loading = new Object[]{null, (Integer) 0};
         //Loading
-        Loading loading = new Loading("Conciliando por valor Participante " + participant, 0, notConcileds.size());
-        int i = 0;
+        loading[0] = new Loading("Conciliando por valor Participante " + participant, 0, notConcileds.size());
+
+        //Mapa para conciliar
+        Map<Integer, ContabilityEntry> mapToConciliate = new TreeMap<>();
 
         //Percorre todos lançamentos
-        for (Entry<Integer, ContabilityEntry> entry : notConcileds.entrySet()) {
-            Integer key = entry.getKey();
-            ContabilityEntry ce = entry.getValue();
-
+        notConcileds.forEach((key, ce) -> {
             //Loading
-            i++;
-            loading.updateBar(i + " de " + notConcileds.size(), i);
+            loading[1] = ((Integer) loading[1]) + 1;
+            ((Loading) loading[0]).updateBar(loading[1] + " de " + notConcileds.size(), (Integer) loading[1]);
 
-            //Se não estiver conciliado
+            //Verifica se nao está conciliado, pois no meio do processo irá conciliar alguns
             if (!ce.isConciliated()) {
 
                 //Define onde a conta está, se em crédito ou em débito 
@@ -471,17 +471,18 @@ public class ConciliateContabilityEntries {
                     ContabilityEntries_Model.defineConciliatedsTo(debits, Boolean.TRUE);
                     ContabilityEntries_Model.defineConciliatedsTo(credits, Boolean.TRUE);
 
-                    //Remove dos nao conciliados, refresh iria demorar mais
-                    Map<Integer, ContabilityEntry> mapToRemove = new TreeMap<>();
-                    mapToRemove.putAll(debits);
-                    mapToRemove.putAll(credits);
-                    removeOfNotConcileds(mapToRemove);
+                    //Remove dos nao conciliados, refresh iria demorar mais                    
+                    mapToConciliate.putAll(debits);
+                    mapToConciliate.putAll(credits);
                 }
             }
-        }
+        });
+
+        //Remove dos nao conciliados pois dar refresh iria demorar mais
+        removeOfNotConcileds(mapToConciliate);
 
         //Acaba com a barra
-        loading.dispose();
+        ((Loading) loading[0]).dispose();
     }
 
     /**
