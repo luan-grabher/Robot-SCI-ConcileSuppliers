@@ -1096,24 +1096,6 @@ is divided into following sections:
         </antcall>
         <antcall target="-maybe-call-dep">
             <param name="call.built.properties" value="${built-jar.properties}"/>
-            <param location="${project.Java-Lib-SimpleDotEnv}" name="call.subproject"/>
-            <param location="${project.Java-Lib-SimpleDotEnv}/build.xml" name="call.script"/>
-            <param name="call.target" value="jar"/>
-            <param name="transfer.built-jar.properties" value="${built-jar.properties}"/>
-            <param name="transfer.not.archive.disabled" value="true"/>
-            <param name="transfer.do.jlink" value="false"/>
-        </antcall>
-        <antcall target="-maybe-call-dep">
-            <param name="call.built.properties" value="${built-jar.properties}"/>
-            <param location="${project.Java-Lib-SimpleView}" name="call.subproject"/>
-            <param location="${project.Java-Lib-SimpleView}/build.xml" name="call.script"/>
-            <param name="call.target" value="jar"/>
-            <param name="transfer.built-jar.properties" value="${built-jar.properties}"/>
-            <param name="transfer.not.archive.disabled" value="true"/>
-            <param name="transfer.do.jlink" value="false"/>
-        </antcall>
-        <antcall target="-maybe-call-dep">
-            <param name="call.built.properties" value="${built-jar.properties}"/>
             <param location="${project.LctoContabil}" name="call.subproject"/>
             <param location="${project.LctoContabil}/build.xml" name="call.script"/>
             <param name="call.target" value="jar"/>
@@ -1123,17 +1105,8 @@ is divided into following sections:
         </antcall>
         <antcall target="-maybe-call-dep">
             <param name="call.built.properties" value="${built-jar.properties}"/>
-            <param location="${project.Parametros}" name="call.subproject"/>
-            <param location="${project.Parametros}/build.xml" name="call.script"/>
-            <param name="call.target" value="jar"/>
-            <param name="transfer.built-jar.properties" value="${built-jar.properties}"/>
-            <param name="transfer.not.archive.disabled" value="true"/>
-            <param name="transfer.do.jlink" value="false"/>
-        </antcall>
-        <antcall target="-maybe-call-dep">
-            <param name="call.built.properties" value="${built-jar.properties}"/>
-            <param location="${project.Robo}" name="call.subproject"/>
-            <param location="${project.Robo}/build.xml" name="call.script"/>
+            <param location="${project.Robots}" name="call.subproject"/>
+            <param location="${project.Robots}/build.xml" name="call.script"/>
             <param name="call.target" value="jar"/>
             <param name="transfer.built-jar.properties" value="${built-jar.properties}"/>
             <param name="transfer.not.archive.disabled" value="true"/>
@@ -1150,8 +1123,8 @@ is divided into following sections:
         </antcall>
         <antcall target="-maybe-call-dep">
             <param name="call.built.properties" value="${built-jar.properties}"/>
-            <param location="${project.Valor}" name="call.subproject"/>
-            <param location="${project.Valor}/build.xml" name="call.script"/>
+            <param location="${project.SimpleView}" name="call.subproject"/>
+            <param location="${project.SimpleView}/build.xml" name="call.script"/>
             <param name="call.target" value="jar"/>
             <param name="transfer.built-jar.properties" value="${built-jar.properties}"/>
             <param name="transfer.not.archive.disabled" value="true"/>
@@ -1857,24 +1830,6 @@ is divided into following sections:
         </antcall>
         <antcall target="-maybe-call-dep">
             <param name="call.built.properties" value="${built-clean.properties}"/>
-            <param location="${project.Java-Lib-SimpleDotEnv}" name="call.subproject"/>
-            <param location="${project.Java-Lib-SimpleDotEnv}/build.xml" name="call.script"/>
-            <param name="call.target" value="clean"/>
-            <param name="transfer.built-clean.properties" value="${built-clean.properties}"/>
-            <param name="transfer.not.archive.disabled" value="true"/>
-            <param name="transfer.do.jlink" value="false"/>
-        </antcall>
-        <antcall target="-maybe-call-dep">
-            <param name="call.built.properties" value="${built-clean.properties}"/>
-            <param location="${project.Java-Lib-SimpleView}" name="call.subproject"/>
-            <param location="${project.Java-Lib-SimpleView}/build.xml" name="call.script"/>
-            <param name="call.target" value="clean"/>
-            <param name="transfer.built-clean.properties" value="${built-clean.properties}"/>
-            <param name="transfer.not.archive.disabled" value="true"/>
-            <param name="transfer.do.jlink" value="false"/>
-        </antcall>
-        <antcall target="-maybe-call-dep">
-            <param name="call.built.properties" value="${built-clean.properties}"/>
             <param location="${project.LctoContabil}" name="call.subproject"/>
             <param location="${project.LctoContabil}/build.xml" name="call.script"/>
             <param name="call.target" value="clean"/>
@@ -1884,17 +1839,8 @@ is divided into following sections:
         </antcall>
         <antcall target="-maybe-call-dep">
             <param name="call.built.properties" value="${built-clean.properties}"/>
-            <param location="${project.Parametros}" name="call.subproject"/>
-            <param location="${project.Parametros}/build.xml" name="call.script"/>
-            <param name="call.target" value="clean"/>
-            <param name="transfer.built-clean.properties" value="${built-clean.properties}"/>
-            <param name="transfer.not.archive.disabled" value="true"/>
-            <param name="transfer.do.jlink" value="false"/>
-        </antcall>
-        <antcall target="-maybe-call-dep">
-            <param name="call.built.properties" value="${built-clean.properties}"/>
-            <param location="${project.Robo}" name="call.subproject"/>
-            <param location="${project.Robo}/build.xml" name="call.script"/>
+            <param location="${project.Robots}" name="call.subproject"/>
+            <param location="${project.Robots}/build.xml" name="call.script"/>
             <param name="call.target" value="clean"/>
             <param name="transfer.built-clean.properties" value="${built-clean.properties}"/>
             <param name="transfer.not.archive.disabled" value="true"/>
@@ -1911,8 +1857,8 @@ is divided into following sections:
         </antcall>
         <antcall target="-maybe-call-dep">
             <param name="call.built.properties" value="${built-clean.properties}"/>
-            <param location="${project.Valor}" name="call.subproject"/>
-            <param location="${project.Valor}/build.xml" name="call.script"/>
+            <param location="${project.SimpleView}" name="call.subproject"/>
+            <param location="${project.SimpleView}/build.xml" name="call.script"/>
             <param name="call.target" value="clean"/>
             <param name="transfer.built-clean.properties" value="${built-clean.properties}"/>
             <param name="transfer.not.archive.disabled" value="true"/>

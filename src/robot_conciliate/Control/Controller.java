@@ -3,7 +3,6 @@ package robot_conciliate.Control;
 import Dates.Dates;
 import Entity.Executavel;
 import Entity.Warning;
-import SimpleDotEnv.Env;
 import fileManager.FileManager;
 import java.io.File;
 import java.io.PrintWriter;
@@ -26,7 +25,7 @@ public class Controller {
     private final Integer participant;
     private final Calendar startDate;
     private final Calendar endDate;
-    private final String databaseCfgFilePath = Env.get("databaseCfgFilePath");
+    private final String databaseCfgFilePath = "\\\\zac\\Robos\\Tarefas\\Todas Empresas\\sci.cfg";
 
     private final Map<Integer, ContabilityEntry> entries = new HashMap<>();
 

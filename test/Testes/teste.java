@@ -13,7 +13,7 @@ import robot_conciliate.Conciliate;
 public class teste {
 
     public static void main(String[] args) {
-        test();
+        Integer inte = Integer.valueOf("");
     }
     
     public static void testeAcentos() {

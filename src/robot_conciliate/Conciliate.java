@@ -4,7 +4,6 @@ import Dates.Dates;
 import Entity.Executavel;
 import Executor.Execution;
 import Robo.AppRobo;
-import SimpleDotEnv.Env;
 import java.util.ArrayList;
 import robot_conciliate.Control.Controller;
 import java.util.Calendar;
@@ -15,80 +14,81 @@ import java.util.Map;
 public class Conciliate {
 
     private static String name;
-    public static String path = "\\\\zac\\Robos\\Tarefas\\Todas Empresas\\";
 
     public static void main(String[] args) {
-        //Inicia robô
-        AppRobo app = new AppRobo("Conciliação Automática");
+        try {
+            //Inicia robô
+            AppRobo app = new AppRobo("Conciliação Automática");
 
-        //Define WorkPath
-        Env.setPath(path);
+            //Define os parâmetros
+            app.definirParametros();
+            
+            
 
-        //Define os parâmetros
-        app.definirParametros();
+            //Define variáveis
+            Integer codEmpresa = Integer.valueOf("0" + app.getParametro("empresa"));
+            Integer contaCTB = Integer.valueOf("0" + app.getParametro("contaCTB"));
+            Integer participant = Integer.valueOf("0" + app.getParametro("participant"));
+            participant = participant == 0 ? null : participant;
 
-        //Define variáveis
-        Integer codEmpresa = app.getParametro("empresa").getInteger();
-        Integer contaCTB = app.getParametro("contaCTB").getInteger();
-        Integer participant = app.getParametro("participant").getInteger();
-        participant = participant == 0 ? null : participant;
+            List<Integer> accounts = new ArrayList<>();
+            if (app.getParametro("contaCTB").contains(";")) {
+                String[] contas = app.getParametro("contaCTB").split(";");
 
-        List<Integer> accounts = new ArrayList<>();
-        if (app.getParametro("contaCTB").getString().contains(";")) {
-            String[] contas = app.getParametro("contaCTB").getString().split(";");
-
-            for (String conta : contas) {
-                conta = conta.replaceAll("[^0-9]", ""); //Remove tudo que não for número
-                //Se a conta nao estiver em branco, contendo apenas numeros
-                if ("".equals(conta)) {
-                    //Adiciona na lista de contas
-                    accounts.add(Integer.valueOf(conta));
+                for (String conta : contas) {
+                    conta = conta.replaceAll("[^0-9]", ""); //Remove tudo que não for número
+                    //Se a conta nao estiver em branco, contendo apenas numeros
+                    if ("".equals(conta)) {
+                        //Adiciona na lista de contas
+                        accounts.add(Integer.valueOf(conta));
+                    }
                 }
             }
-        }
 
-        List<Integer> participants = new ArrayList<>();
-        if (participant != null && app.getParametro("participant").getString().contains(";")) {
-            String[] participantes = app.getParametro("participant").getString().split(";");
+            List<Integer> participants = new ArrayList<>();
+            if (participant != null && app.getParametro("participant").contains(";")) {
+                String[] participantes = app.getParametro("participant").split(";");
 
-            for (String participante : participantes) {
-                participante = participante.replaceAll("[^0-9]", ""); //Remove tudo que não for número
-                //Se a conta nao estiver em branco, contendo apenas numeros
-                if ("".equals(participante)) {
-                    //Adiciona na lista de contas
-                    participants.add(Integer.valueOf(participante));
+                for (String participante : participantes) {
+                    participante = participante.replaceAll("[^0-9]", ""); //Remove tudo que não for número
+                    //Se a conta nao estiver em branco, contendo apenas numeros
+                    if ("".equals(participante)) {
+                        //Adiciona na lista de contas
+                        participants.add(Integer.valueOf(participante));
+                    }
                 }
             }
-        }
 
-        Calendar dataInicial = app.getParametro("dataInicial").getCalendar("ymd");
-        Calendar dataFinal = app.getParametro("dataFinal").getCalendar("ymd");
-        boolean zerarConciliacao = app.getParametro("zerarConciliacao").getBoolean();
+            Calendar dataInicial = Dates.getCalendarFromFormat(app.getParametro("dataInicial"), "y-M-d");
+            Calendar dataFinal = Dates.getCalendarFromFormat(app.getParametro("dataFinal"), "y-M-d");
+            boolean zerarConciliacao = Boolean.valueOf(app.getParametro("zerarConciliacao"));
 
-        String dataInicialStr = Dates.getCalendarInThisStringFormat(dataInicial, "dd/MM/yyyy");
-        String dataFinalStr = Dates.getCalendarInThisStringFormat(dataFinal, "dd/MM/yyyy");
+            String dataInicialStr = Dates.getCalendarInThisStringFormat(dataInicial, "dd/MM/yyyy");
+            String dataFinalStr = Dates.getCalendarInThisStringFormat(dataFinal, "dd/MM/yyyy");
 
-        name = "Conciliação Automática -- #" + codEmpresa + " conta '" + app.getParametro("contaCTB").getString() + "' participante '" + app.getParametro("participant").getString() + "' - " + dataInicialStr + " -> " + dataFinalStr + " | zerar concilação: " + zerarConciliacao;
-        app.setNome(name);
+            name = "Conciliação Automática -- #" + codEmpresa + " conta '" + app.getParametro("contaCTB") + "' participante '" + app.getParametro("participant") + "' - " + dataInicialStr + " -> " + dataFinalStr + " | zerar concilação: " + zerarConciliacao;
+            app.setNome(name);
 
-        //Se a Lista de contas estiver vazia e só tiver uma conta
-        if (accounts.isEmpty()) {
-            if (participants.isEmpty()) {
-                //Executa uma conta
-                app.executar(
-                        principal(codEmpresa, contaCTB, participant, dataInicial, dataFinal, zerarConciliacao)
-                );
+            //Se a Lista de contas estiver vazia e só tiver uma conta
+            if (accounts.isEmpty()) {
+                if (participants.isEmpty()) {
+                    //Executa uma conta
+                    app.executar(
+                            principal(codEmpresa, contaCTB, participant, dataInicial, dataFinal, zerarConciliacao)
+                    );
+                } else {
+                    //Executa uma conta e vários participantes
+                    app.executar(
+                            principal(codEmpresa, contaCTB, participants, dataInicial, dataFinal, zerarConciliacao)
+                    );
+                }
             } else {
-                //Executa uma conta e vários participantes
+                //Executa varias contas
                 app.executar(
-                        principal(codEmpresa, contaCTB, participants, dataInicial, dataFinal, zerarConciliacao)
+                        principal(codEmpresa, accounts, participant, dataInicial, dataFinal, zerarConciliacao)
                 );
             }
-        } else {
-            //Executa varias contas
-            app.executar(
-                    principal(codEmpresa, accounts, participant, dataInicial, dataFinal, zerarConciliacao)
-            );
+        } catch (Exception e) {
         }
 
         System.exit(0);
@@ -98,26 +98,40 @@ public class Conciliate {
      * VÁRIOS PARTICIPANTES Método principal que gerencia a execução e o
      * controle.
      *
+     * @param enterprise Empresa
+     * @param account Conta
+     * @param participants Lista de Participantes
+     * @param dateStart inicio
+     * @param dateEnd fim
+     * @param remakeConciliate Refazer conciliação
+     * @return Retorno das execuções de cada particiapante
      */
     public static String principal(Integer enterprise, Integer account, List<Integer> participants, Calendar dateStart, Calendar dateEnd, boolean remakeConciliate) {
         StringBuilder result = new StringBuilder();
-        for (Integer participant : participants) {
+        participants.forEach(participant -> {
             result.append("\n\n\nCONTA CONTÁBIL: ").append(account).append("\n");
             result.append(principal(enterprise, account, participant, dateStart, dateEnd, remakeConciliate));
-        }
+        });
         return result.toString();
     }
 
     /**
      * VÁRIAS CONTAS Método principal que gerencia a execução e o controle.
      *
+     * @param enterprise Empresa
+     * @param accounts Lista de Contas
+     * @param participant Particpante
+     * @param dateStart inicio
+     * @param dateEnd fim
+     * @param remakeConciliate Refazer conciliação
+     * @return Retorno das execuções de cada conta
      */
     public static String principal(Integer enterprise, List<Integer> accounts, Integer participant, Calendar dateStart, Calendar dateEnd, boolean remakeConciliate) {
         StringBuilder result = new StringBuilder();
-        for (Integer account : accounts) {
+        accounts.forEach(account -> {
             result.append("\n\n\nCONTA CONTÁBIL: ").append(account).append("\n");
             result.append(principal(enterprise, account, participant, dateStart, dateEnd, remakeConciliate));
-        }
+        });
         return result.toString();
     }
 
@@ -125,6 +139,13 @@ public class Conciliate {
      * SOMENTE UM PARTICIPANTE E UMA CONTA Método principal que gerencia a
      * execução e o controle.
      *
+     * @param enterprise Empresa
+     * @param account Conta
+     * @param participant Particpante
+     * @param dateStart inicio
+     * @param dateEnd fim
+     * @param remakeConciliate Refazer conciliação
+     * @return Retorno das execução da conta e participante
      */
     public static String principal(Integer enterprise, Integer account, Integer participant, Calendar dateStart, Calendar dateEnd, boolean remakeConciliate) {
 
