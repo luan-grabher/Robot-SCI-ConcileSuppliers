@@ -13,7 +13,7 @@ import robot_conciliate.Conciliate;
 public class teste {
 
     public static void main(String[] args) {
-        Integer inte = Integer.valueOf("");
+        test();
     }
     
     public static void testeAcentos() {
@@ -75,12 +75,12 @@ public class teste {
     }
     
     public static void test() {
-        Integer enterprise = 662;
+        Integer enterprise = 238;
         Integer account = 148;
-        Integer participant = null;
+        Integer participant = 910005;
         Calendar startDate = Calendar.getInstance();
         Calendar endDate = Calendar.getInstance();
-        Boolean reworkConciliate = false;
+        Boolean reworkConciliate = true;
 
         startDate.set(2020, 0, 1);
         endDate.set(2020, 11, 31);
