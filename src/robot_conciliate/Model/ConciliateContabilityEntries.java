@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import lctocontabil.Entity.ContabilityEntry;
@@ -29,8 +28,7 @@ public class ConciliateContabilityEntries {
     private final Map<Integer, ContabilityEntry> entries;
     private Map<Integer, ContabilityEntry> notConcileds = new TreeMap<>();
 
-    private final Map<Integer, Integer> participants = new TreeMap<>();
-    //private final Map<String, String> documents = new TreeMap<>();
+    private final Map<Integer, Integer> participants = new TreeMap<>();    
 
     private final static Integer TYPE_CREDIT = 0;
     private final static Integer TYPE_DEBIT = 1;
@@ -197,7 +195,7 @@ public class ConciliateContabilityEntries {
                 conciliateByValues(participant);
                 //Concilia pelos valores apos cada valor
                 System.out.println(participant + ": Conciliando por Valores Futuros");
-                conciliateByAfterValues(participant);
+                //conciliateByAfterValues(participant);
 
                 //mostra informações
                 infos.append("\n    Conciliados APÓS conciliação:");
@@ -423,8 +421,10 @@ public class ConciliateContabilityEntries {
                         diference = totalCredits.add(totalDebits.negate());
 
                         //Procura lançamento com valor exato que não esteja nos debitos e adiciona nos totais de achar
-                        if (findEntryWithDiference(debits, totalDebits, diference, TYPE_CREDIT, participant)) {
+                        BigDecimal newTotal = findEntryWithDiference(debits, totalDebits, diference, TYPE_CREDIT, participant);
+                        if (newTotal != null) {
                             //Se encontrou o valor reverso exato, vai fechar então não precisa mais tentar fechar
+                            totalDebits = newTotal;
                             break;
                         }
                     } else {
@@ -432,8 +432,10 @@ public class ConciliateContabilityEntries {
                         diference = totalDebits.add(totalCredits.negate());
 
                         //Procura lançamento com valor exato que não esteja nos debitos e adiciona nos totais de achar
-                        if (findEntryWithDiference(credits, totalCredits, diference, TYPE_DEBIT, participant)) {
+                        BigDecimal newTotal = findEntryWithDiference(credits, totalCredits, diference, TYPE_DEBIT, participant);
+                        if (newTotal != null) {
                             //Adicionou o credito, entao pode vazar
+                            totalCredits = newTotal;
                             break;
                         }
                     }
@@ -496,16 +498,16 @@ public class ConciliateContabilityEntries {
      * @return Retorna TRUE caso encontre e implemente no mapa
      * @return Retorna FALSE caso não encontre e não implementa no mapa
      */
-    private boolean findEntryWithDiference(Map<Integer, ContabilityEntry> mapValues, BigDecimal total, BigDecimal diference, Integer participantReverseType, Integer participantReverse) {
+    private BigDecimal findEntryWithDiference(Map<Integer, ContabilityEntry> mapValues, BigDecimal total, BigDecimal diference, Integer participantReverseType, Integer participantReverse) {
         //Procura lançamento com valor igual
         ContabilityEntry entry = getEntryWithValue(participantReverseType, participantReverse, diference, mapValues);
         //Se encontrar adiciona na lista de debitos
         if (entry != null) {
             mapValues.put(entry.getKey(), entry);
             total = total.add(diference);
-            return true;
+            return total;
         } else {
-            return false;
+            return null;
         }
     }
 
