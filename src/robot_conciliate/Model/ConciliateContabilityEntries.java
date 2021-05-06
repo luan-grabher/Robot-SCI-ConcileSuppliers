@@ -230,11 +230,11 @@ public class ConciliateContabilityEntries {
         //Percorre lançamentos do participante para fazer soma dos creditos e debitos dos documentos
         notConcileds.forEach((key, ce) -> {
             if (ce.getParticipantCredit().equals(participant)) {//Se o participante for de credito
-                String doc = ce.getDocument() == null ? "" : ce.getDocument();//pega doc
+                String doc = ce.getDocument() == null ? "" : ce.getDocument().replaceAll("[^a-zA-Z0-9]", "");//pega doc
                 BigDecimal newVal = documentCreditTotals.getOrDefault(doc, BigDecimal.ZERO).add(ce.getValue());
                 documentCreditTotals.put(doc, newVal);
             } else if (ce.getParticipantDebit().equals(participant)) {//Se o participante for de debito
-                String doc = ce.getDocument() == null ? "" : ce.getDocument();//pega doc
+                String doc = ce.getDocument() == null ? "" : ce.getDocument().replaceAll("[^a-zA-Z0-9]", "");//pega doc
                 BigDecimal newVal = documentDebitTotals.getOrDefault(doc, BigDecimal.ZERO).add(ce.getValue());
                 documentDebitTotals.put(doc, newVal);
             }
@@ -256,7 +256,7 @@ public class ConciliateContabilityEntries {
                                             .getOrDefault(doc, BigDecimal.ZERO)) == 0) {
                 //Percorre nao conciliados para conciliar
                 notConcileds.forEach((key, ce) -> {
-                    if (ce.getDocument().equals(doc)) { //Se for o mesmo doc
+                    if (ce.getDocument().replaceAll("[^a-zA-Z0-9]", "").equals(doc)) { //Se for o mesmo doc
                         ce.conciliate();//concilia o lançamento
                     }
                 });
