@@ -195,7 +195,7 @@ public class ConciliateContabilityEntries {
                 conciliateByValues(participant);
                 //Concilia pelos valores apos cada valor
                 System.out.println(participant + ": Conciliando por Valores Futuros");
-                //conciliateByAfterValues(participant);
+                conciliateByAfterValues(participant);
 
                 //mostra informações
                 infos.append("\n    Conciliados APÓS conciliação:");
